@@ -3,7 +3,7 @@ Kanzleisoftware für Anwälte und Mitarbeiter
 
 🏛️ VeriLex – SaaS-Plattform für österreichische Anwaltskanzleien
 
-KanzleiPilot ist ein webbasiertes SaaS-Demoprojekt zur digitalen Abbildung juristischer Workflows in österreichischen Kanzleien. Ziel ist die Entwicklung einer modularen, rollenbasierten Plattform, die Anwaltskanzleien, Sekretariate, Buchhaltungen und Kanzleimanager:innen bei der täglichen Arbeit unterstützt – von der Mandatsanlage bis zur Abrechnung.
+VeriLex ist ein webbasiertes SaaS-Demoprojekt zur digitalen Abbildung juristischer Workflows in österreichischen Kanzleien. Ziel ist die Entwicklung einer modularen, rollenbasierten Plattform, die Anwaltskanzleien, Sekretariate, Buchhaltungen und Kanzleimanager:innen bei der täglichen Arbeit unterstützt – von der Mandatsanlage bis zur Abrechnung.
 
 🎯 Zielsetzung
 
@@ -24,7 +24,7 @@ Erweiterbarkeit: Architektur ist vorbereitet für spätere Integration von KI-Mo
 Österreichische Kanzleien arbeiten derzeit mit einer Vielzahl getrennter Systeme für Mandatsverwaltung, Zeiterfassung, Fakturierung und Dokumentation.
 Ziel dieses Projekts ist es, diese Prozesse in einer einheitlichen, intuitiven Plattform zu vereinen und durch intelligente Automatisierung zu vereinfachen.
 
-KanzleiPilot soll langfristig:
+VeriLex soll langfristig:
 
 Medienbrüche zwischen Anwalt, Sekretariat und Buchhaltung vermeiden,
 
