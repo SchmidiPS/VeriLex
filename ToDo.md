@@ -19,8 +19,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 1. **Globale Fehlerbehandlung** – Füge ein zentrales Fehler-Overlay hinzu, das Fehler (JavaScript-Exceptions oder nicht geladene Daten) abfängt und benutzerfreundlich darstellt.
    Status: ✅ erledigt – 2025-11-04
 
-2. **CI/CD-Workflow für GitHub Pages** – Lege eine GitHub Actions Workflow-Datei an (`.github/workflows/deploy.yml`), die das Projekt bei jedem Push auf den `main`-Branch automatisch auf GitHub Pages deployt.  
-   Status: ⬜
+2. **CI/CD-Workflow für GitHub Pages** – Lege eine GitHub Actions Workflow-Datei an (`.github/workflows/deploy.yml`), die das Projekt bei jedem Push auf den `main`-Branch automatisch auf GitHub Pages deployt.
+   Status: ✅ erledigt – 2025-11-04
 
 3. **Aktenliste mit Suche** – Erstelle eine übersichtliche Liste aller Demo-Akten. Die Liste soll responsiv im Grid angezeigt werden und eine Suchleiste enthalten, die nach Titel oder Aktennummer filtert. Verwende Platzhalterdaten im JSON-Format. Achte auf klare Darstellung (Titel, Mandant, Friststatus) und Keyboard-Navigation.  
    Status: ⬜
