@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Akten-Detail</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>VeriLex Demo</h1>
+      <p class="app-subtitle">Aktenhistorie &amp; Timeline</p>
+    </header>
+
+    <main class="app-main case-detail-main" aria-live="polite">
+      <nav class="case-breadcrumb" aria-label="Brotkrumen">
+        <a class="case-breadcrumb__link" href="index.html">&larr; Zur Aktenübersicht</a>
+      </nav>
+
+      <section class="case-card case-detail-card" aria-labelledby="case-detail-title">
+        <header class="case-detail-card__header">
+          <div>
+            <p id="case-number" class="case-detail__number" aria-live="polite"></p>
+            <h2 id="case-detail-title" class="case-detail__title"></h2>
+          </div>
+          <div class="case-detail__status-group">
+            <span id="case-status" class="case-status-pill" role="status"></span>
+            <span id="case-priority" class="case-status-pill case-status-pill--muted"></span>
+          </div>
+        </header>
+
+        <div class="case-detail-layout">
+          <aside class="case-sidebar" aria-label="Akteninformationen">
+            <section class="case-sidebar__section">
+              <h3 class="case-sidebar__heading">Mandant &amp; Team</h3>
+              <dl class="case-sidebar__meta">
+                <div>
+                  <dt>Mandant</dt>
+                  <dd id="case-client"></dd>
+                </div>
+                <div>
+                  <dt>Verantwortliche Person</dt>
+                  <dd id="case-responsible"></dd>
+                </div>
+                <div>
+                  <dt>Rechtsgebiet</dt>
+                  <dd id="case-practice"></dd>
+                </div>
+                <div>
+                  <dt>Letzte Aktualisierung</dt>
+                  <dd id="case-updated"></dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="case-sidebar__section">
+              <h3 class="case-sidebar__heading">Tags</h3>
+              <div id="case-tags" class="case-tags" role="list"></div>
+            </section>
+
+            <section class="case-sidebar__section">
+              <h3 class="case-sidebar__heading">Nächste Schritte</h3>
+              <ul id="case-next-steps" class="case-next-steps"></ul>
+            </section>
+          </aside>
+
+          <section class="case-timeline" aria-labelledby="case-timeline-title">
+            <header class="case-timeline__header">
+              <div>
+                <h3 id="case-timeline-title">Timeline</h3>
+                <p id="case-timeline-summary" class="case-timeline__summary"></p>
+              </div>
+              <div class="case-timeline__filters" role="group" aria-label="Timeline filtern">
+                <button type="button" class="timeline-filter timeline-filter--active" data-filter="all">
+                  Alle Ereignisse
+                </button>
+                <button type="button" class="timeline-filter" data-filter="document">Dokumente</button>
+                <button type="button" class="timeline-filter" data-filter="deadline">Fristen</button>
+                <button type="button" class="timeline-filter" data-filter="note">Notizen</button>
+                <button type="button" class="timeline-filter" data-filter="activity">Aktivitäten</button>
+              </div>
+            </header>
+
+            <ol id="case-timeline-list" class="timeline-list"></ol>
+            <p id="case-timeline-empty" class="timeline-empty" hidden>
+              Für den ausgewählten Filter sind keine Timeline-Einträge vorhanden.
+            </p>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details" hidden>
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">
+            Seite neu laden
+          </button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">
+            Schließen
+          </button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="application/json" id="case-detail-data">
+      {
+        "cases": [
+          {
+            "caseNumber": "V-2024-001",
+            "title": "Vertragsprüfung Müller GmbH",
+            "client": "Müller GmbH",
+            "status": "In Bearbeitung",
+            "priority": "Hoch",
+            "practiceArea": "Gesellschaftsrecht",
+            "responsible": "RAin Dr. Hannah Keller",
+            "lastUpdated": "2025-11-03T14:30:00+01:00",
+            "tags": ["Due Diligence", "Komplex"],
+            "nextSteps": [
+              "Feedback der Mandantin im Jour fixe dokumentieren",
+              "Finalen Vertragsentwurf bis 08.11. versenden"
+            ],
+            "timeline": [
+              {
+                "id": "evt-01",
+                "type": "document",
+                "title": "Vertragsentwurf – Fassung 3",
+                "description": "Aktualisierter Vertragsentwurf mit eingearbeiteten Klauseln zur Haftungsbegrenzung hochgeladen.",
+                "timestamp": "2025-11-03T09:45:00+01:00",
+                "author": "RAin Dr. Hannah Keller",
+                "attachment": "Vertrag_V3.pdf"
+              },
+              {
+                "id": "evt-02",
+                "type": "note",
+                "title": "Mandantennotiz",
+                "description": "Telefonnotiz: Frau Müller bittet um Klarstellung der Wettbewerbsverbotsklausel.",
+                "timestamp": "2025-11-02T16:10:00+01:00",
+                "author": "RA Felix Sommer"
+              },
+              {
+                "id": "evt-03",
+                "type": "deadline",
+                "title": "Frist: Feedback der Geschäftsführung",
+                "description": "Rückmeldung der Geschäftsführung der Mandantin erwartet.",
+                "timestamp": "2025-11-05T12:00:00+01:00",
+                "status": "ausstehend"
+              },
+              {
+                "id": "evt-04",
+                "type": "activity",
+                "title": "Teams-Call mit Mandantin",
+                "description": "Besprechung der offenen Punkte in Kapitel 4 (Gewährleistung).",
+                "timestamp": "2025-10-31T11:00:00+01:00",
+                "duration": "45 Minuten"
+              },
+              {
+                "id": "evt-05",
+                "type": "document",
+                "title": "Kommentierter Vertragsanhang",
+                "description": "Mandantin hat Anhang A mit Kommentaren versehen zurückgesandt.",
+                "timestamp": "2025-10-28T08:25:00+02:00",
+                "author": "Müller GmbH"
+              }
+            ]
+          },
+          {
+            "caseNumber": "A-2024-017",
+            "title": "Arbeitsrechtliche Beratung Schmidt",
+            "client": "Eva Schmidt",
+            "status": "Warten auf Rückmeldung",
+            "priority": "Mittel",
+            "practiceArea": "Arbeitsrecht",
+            "responsible": "RAin Julia Reuter",
+            "lastUpdated": "2025-10-30T10:15:00+01:00",
+            "tags": ["Vergleich", "Kündigung"],
+            "nextSteps": [
+              "Entwurf Vergleichsangebot finalisieren",
+              "Unterlagen für Gütetermin vorbereiten"
+            ],
+            "timeline": [
+              {
+                "id": "evt-06",
+                "type": "deadline",
+                "title": "Frist: Stellungnahme der Gegenseite",
+                "description": "Gegenseite zugesagte Stellungnahme erwartet.",
+                "timestamp": "2025-11-07T18:00:00+01:00",
+                "status": "offen"
+              },
+              {
+                "id": "evt-07",
+                "type": "note",
+                "title": "Mandantenfeedback",
+                "description": "Mandantin stimmt vorgeschlagenem Vergleichsbetrag zu.",
+                "timestamp": "2025-10-29T13:40:00+01:00",
+                "author": "RAin Julia Reuter"
+              },
+              {
+                "id": "evt-08",
+                "type": "activity",
+                "title": "Arbeitsgericht – Gütetermin terminiert",
+                "description": "Terminbestätigung vom Gericht erhalten.",
+                "timestamp": "2025-10-27T09:05:00+02:00",
+                "duration": "15 Minuten"
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/case-detail.js" type="module"></script>
+  </body>
+</html>

@@ -208,6 +208,22 @@ function initCaseDirectory() {
     summary.textContent = selectionMessage ? `${baseMessage} — ${selectionMessage}` : baseMessage;
   };
 
+  const buildCaseDetailUrl = (caseEntry) => {
+    const caseNumber = caseEntry.caseNumber?.trim();
+    if (!caseNumber) {
+      return 'case-detail.html';
+    }
+
+    const params = new URLSearchParams();
+    params.set('case', caseNumber);
+    return `case-detail.html?${params.toString()}`;
+  };
+
+  const navigateToDetail = (caseEntry) => {
+    const url = buildCaseDetailUrl(caseEntry);
+    window.location.href = url;
+  };
+
   const renderList = (list) => {
     grid.innerHTML = '';
     const fragment = document.createDocumentFragment();
@@ -237,10 +253,12 @@ function initCaseDirectory() {
           <span>${caseEntry.client || 'unbekannt'}</span>
         </p>
         <div class="case-card__footer">
-          <span class="case-card__action-hint">Enter oder Leertaste markiert die Akte</span>
+          <span class="case-card__action-hint">Enter öffnet die Detailseite, Leertaste markiert</span>
           <span class="case-card__icon" aria-hidden="true">⟶</span>
         </div>
       `;
+
+      card.addEventListener('click', () => navigateToDetail(caseEntry));
 
       fragment.appendChild(card);
     });
@@ -280,7 +298,7 @@ function initCaseDirectory() {
       return;
     }
 
-    selectionMessage = `Akte „${caseEntry.title || caseEntry.caseNumber}“ markiert`;
+    selectionMessage = `Akte „${caseEntry.title || caseEntry.caseNumber}“ markiert. Enter öffnet die Detailseite.`;
     updateSummary(currentList.length);
   };
 
@@ -325,7 +343,13 @@ function initCaseDirectory() {
       return;
     }
 
-    if (event.key === ' ' || event.key === 'Enter') {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      navigateToDetail(currentList[index]);
+      return;
+    }
+
+    if (event.key === ' ') {
       event.preventDefault();
       announceSelection(currentList[index]);
     }
