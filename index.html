@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Kanzlei-Demo</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>VeriLex Demo</h1>
+      <p class="app-subtitle">Digitale Workflows für Kanzleien</p>
+    </header>
+
+    <main class="app-main" aria-live="polite">
+      <section class="app-card">
+        <h2>Willkommen</h2>
+        <p>
+          Diese Oberfläche wird Schritt für Schritt gemäß der Aufgabenliste in
+          <code>ToDo.md</code> erweitert. Aktuell ist ein globales Fehler-Overlay
+          aktiv, das Ausnahmesituationen für Nutzer:innen sichtbar macht.
+        </p>
+        <button type="button" id="trigger-demo-error" class="btn btn-primary">
+          Demo-Fehler auslösen
+        </button>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details">
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">
+            Seite neu laden
+          </button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">
+            Schließen
+          </button>
+        </footer>
+      </div>
+    </div>
+
+    <script src="assets/js/app.js" type="module"></script>
+  </body>
+</html>

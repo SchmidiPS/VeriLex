@@ -1,0 +1,202 @@
+:root {
+  color-scheme: light;
+  font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  background-color: #f4f6fb;
+  color: #1f2933;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  background: linear-gradient(135deg, #1f3c88, #2f74c0);
+  color: #fff;
+  padding: 2rem clamp(1.5rem, 4vw, 4rem);
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(31, 60, 136, 0.4);
+}
+
+.app-header h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(2rem, 5vw, 2.8rem);
+}
+
+.app-subtitle {
+  margin: 0;
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+}
+
+.app-main {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: clamp(1.5rem, 5vw, 4rem);
+}
+
+.app-card {
+  width: min(650px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(31, 60, 136, 0.08);
+}
+
+.app-card h2 {
+  margin-top: 0;
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  padding: 0.75rem 1.4rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.2s;
+}
+
+.btn:focus-visible {
+  outline: 3px solid rgba(47, 116, 192, 0.4);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: #2f74c0;
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(47, 116, 192, 0.35);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(47, 116, 192, 0.38);
+}
+
+.btn-secondary {
+  background: #fff;
+  color: #1f2933;
+  border-color: rgba(47, 116, 192, 0.35);
+}
+
+.btn-secondary:hover {
+  background: rgba(47, 116, 192, 0.08);
+}
+
+.error-overlay[hidden] {
+  display: none;
+}
+
+.error-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.65);
+  display: grid;
+  place-items: center;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  z-index: 999;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.error-overlay__content {
+  width: min(520px, 100%);
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 30px 60px rgba(15, 23, 42, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.error-overlay__header {
+  background: #2f74c0;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+}
+
+.error-overlay__close {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1.75rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+
+.error-overlay__message {
+  padding: 1.25rem;
+  font-size: 1.05rem;
+  color: #1f2933;
+  background: linear-gradient(180deg, rgba(47, 116, 192, 0.06), transparent);
+}
+
+.error-overlay__details {
+  margin: 0;
+  padding: 0 1.25rem 1.25rem;
+}
+
+.error-overlay__details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #2f74c0;
+  margin-bottom: 0.75rem;
+}
+
+.error-overlay__details pre {
+  margin: 0;
+  padding: 1rem;
+  background: #0f172a;
+  color: #f9fafb;
+  border-radius: 12px;
+  max-height: 180px;
+  overflow: auto;
+  font-size: 0.85rem;
+}
+
+.error-overlay__footer {
+  margin-top: auto;
+  padding: 1rem 1.25rem 1.25rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-card {
+    padding: 1.25rem;
+  }
+
+  .error-overlay__footer {
+    justify-content: stretch;
+  }
+
+  .error-overlay__footer .btn {
+    flex: 1 1 auto;
+  }
+}
