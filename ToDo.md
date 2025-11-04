@@ -37,8 +37,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 7. **Dokument-Viewer** – Baue ein modales Fenster zum Anzeigen von PDF-Dokumenten (z. B. über eingebettetes `<iframe>`).
    Status: ✅ erledigt – 2025-11-04
 
-8. **Vorlagen-Assistent** – Füge ein einfaches Formular hinzu, mit dem Textbausteine oder Vorlagen angezeigt, angepasst und in das Dokument eingefügt werden können.  
-   Status: ⬜
+8. **Vorlagen-Assistent** – Füge ein einfaches Formular hinzu, mit dem Textbausteine oder Vorlagen angezeigt, angepasst und in das Dokument eingefügt werden können.
+   Status: ✅ erledigt – 2025-11-04
 
 9. **Zeiterfassung mit Stoppuhr** – Ergänze eine Stoppuhr-Komponente, die die Zeit für eine Tätigkeit misst und als Eintrag in der Leistungsübersicht speichert.  
    Status: ⬜
