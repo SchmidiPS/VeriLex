@@ -8,9 +8,18 @@ const documentList = document.getElementById('document-list');
 const emptyState = document.getElementById('document-empty-state');
 const summaryEl = document.getElementById('document-upload-summary');
 const processingInfoEl = document.getElementById('document-processing-info');
+const viewerRoot = document.getElementById('document-viewer');
+const viewerFrame = document.getElementById('document-viewer-frame');
+const viewerFallback = document.getElementById('document-viewer-fallback');
+const viewerMeta = document.getElementById('document-viewer-meta');
+const viewerTitle = document.getElementById('document-viewer-title');
 
 let documents = [];
 let seedDocuments = [];
+let lastFocusedElement = null;
+let viewerVisible = false;
+let previousBodyOverflow = '';
+let activeViewerDocumentId = null;
 
 function createDocumentId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -78,6 +87,190 @@ function formatDate(value) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date);
+}
+
+function isPdfDocument(doc) {
+  const mime = (doc?.mimeType ?? '').toLowerCase();
+  if (mime.includes('pdf')) {
+    return true;
+  }
+
+  const name = (doc?.name ?? '').toLowerCase();
+  return name.endsWith('.pdf');
+}
+
+function cleanupDocumentResources(doc) {
+  if (doc?.inlineUrl) {
+    try {
+      URL.revokeObjectURL(doc.inlineUrl);
+    } catch (error) {
+      console.warn('Konnte temporäre URL nicht freigeben.', error);
+    }
+    delete doc.inlineUrl;
+  }
+}
+
+function buildDocumentMetaText(doc) {
+  const sizeText = formatFileSize(doc?.size);
+  const uploadedAtText = formatDate(doc?.uploadedAt);
+  const uploadedBy = doc?.uploadedBy ?? 'Unbekannte Person';
+  return `${sizeText} · Hochgeladen am ${uploadedAtText} von ${uploadedBy}`;
+}
+
+function showViewerFrame(url) {
+  if (!viewerFrame) {
+    return;
+  }
+
+  viewerFrame.src = url;
+  viewerFrame.removeAttribute('hidden');
+  if (viewerFallback) {
+    viewerFallback.textContent = '';
+    viewerFallback.setAttribute('hidden', '');
+  }
+}
+
+function showViewerFallback(message) {
+  if (!viewerFallback) {
+    return;
+  }
+
+  viewerFallback.textContent = message;
+  viewerFallback.removeAttribute('hidden');
+  if (viewerFrame) {
+    viewerFrame.setAttribute('hidden', '');
+    viewerFrame.src = 'about:blank';
+  }
+}
+
+function closeDocumentViewer() {
+  if (!viewerRoot) {
+    return;
+  }
+
+  viewerRoot.setAttribute('hidden', '');
+  viewerRoot.setAttribute('aria-hidden', 'true');
+  if (viewerFrame) {
+    viewerFrame.src = 'about:blank';
+    viewerFrame.setAttribute('hidden', '');
+  }
+  if (viewerFallback) {
+    viewerFallback.textContent = '';
+    viewerFallback.setAttribute('hidden', '');
+  }
+  if (viewerMeta) {
+    viewerMeta.textContent = '';
+  }
+
+  document.body.style.overflow = previousBodyOverflow;
+  viewerVisible = false;
+  activeViewerDocumentId = null;
+
+  if (lastFocusedElement instanceof HTMLElement) {
+    try {
+      lastFocusedElement.focus();
+    } catch (error) {
+      console.warn('Fokus konnte nicht zurückgesetzt werden.', error);
+    }
+  }
+
+  lastFocusedElement = null;
+}
+
+function openDocumentViewer(documentId) {
+  if (!viewerRoot) {
+    return;
+  }
+
+  const doc = documents.find((entry) => entry.id === documentId);
+  if (!doc) {
+    overlayInstance?.show?.({
+      title: 'Dokument nicht gefunden',
+      message: 'Das angeforderte Dokument steht nicht mehr zur Verfügung.',
+    });
+    return;
+  }
+
+  if (viewerFrame) {
+    viewerFrame.setAttribute('hidden', '');
+    viewerFrame.src = 'about:blank';
+  }
+
+  if (viewerFallback) {
+    viewerFallback.textContent = '';
+    viewerFallback.setAttribute('hidden', '');
+  }
+
+  if (viewerTitle) {
+    viewerTitle.textContent = doc.name ?? 'Dokument anzeigen';
+  }
+
+  if (viewerMeta) {
+    viewerMeta.textContent = buildDocumentMetaText(doc);
+  }
+
+  let resourceUrl = null;
+
+  if (doc.viewerUrl) {
+    resourceUrl = doc.viewerUrl;
+  } else if (doc.inlineUrl) {
+    resourceUrl = doc.inlineUrl;
+  } else if (doc.file instanceof File && isPdfDocument(doc)) {
+    try {
+      doc.inlineUrl = URL.createObjectURL(doc.file);
+      resourceUrl = doc.inlineUrl;
+    } catch (error) {
+      console.error('PDF-Vorschau konnte nicht vorbereitet werden.', error);
+      overlayInstance?.show?.({
+        title: 'Vorschau nicht möglich',
+        message: `Für ${doc.name ?? 'dieses Dokument'} konnte keine Vorschau erzeugt werden.`,
+        details: error,
+      });
+    }
+  }
+
+  if (isPdfDocument(doc) && resourceUrl) {
+    showViewerFrame(resourceUrl);
+  } else if (isPdfDocument(doc) && !resourceUrl) {
+    showViewerFallback(
+      'Die PDF-Vorschau konnte nicht geladen werden. Bitte versuchen Sie es erneut oder laden Sie die Datei herunter.'
+    );
+  } else {
+    showViewerFallback(
+      'Für dieses Dateiformat ist derzeit keine Vorschau verfügbar. Laden Sie die Datei herunter, um sie lokal zu öffnen.'
+    );
+  }
+
+  previousBodyOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+  lastFocusedElement = document.activeElement;
+
+  viewerRoot.removeAttribute('hidden');
+  viewerRoot.setAttribute('aria-hidden', 'false');
+  viewerRoot.querySelector('.document-viewer__close')?.focus?.();
+
+  viewerVisible = true;
+  activeViewerDocumentId = doc.id;
+}
+
+function registerViewerEvents() {
+  if (!viewerRoot) {
+    return;
+  }
+
+  viewerRoot.addEventListener('click', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLElement && target.dataset.viewerAction === 'close') {
+      event.preventDefault();
+      closeDocumentViewer();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && viewerVisible) {
+      closeDocumentViewer();
+    }
+  });
 }
 
 function determineIconForMime(mimeType = '') {
@@ -167,14 +360,21 @@ function renderDocument(doc) {
   const actions = document.createElement('div');
   actions.className = 'document-entry__actions';
 
+  const viewButton = document.createElement('button');
+  viewButton.type = 'button';
+  viewButton.className = 'document-entry__action-btn document-entry__action-btn--primary';
+  viewButton.textContent = 'Anzeigen';
+  viewButton.setAttribute('aria-label', `${doc.name} in der Vorschau öffnen`);
+  viewButton.addEventListener('click', () => openDocumentViewer(doc.id));
+
   const removeButton = document.createElement('button');
   removeButton.type = 'button';
-  removeButton.className = 'document-entry__action-btn';
+  removeButton.className = 'document-entry__action-btn document-entry__action-btn--danger';
   removeButton.textContent = 'Entfernen';
   removeButton.setAttribute('aria-label', `${doc.name} aus der Liste entfernen`);
   removeButton.addEventListener('click', () => removeDocument(doc.id));
 
-  actions.appendChild(removeButton);
+  actions.append(viewButton, removeButton);
 
   listItem.append(preview, meta, actions);
 
@@ -216,19 +416,32 @@ function updateProcessingInfo(message) {
 }
 
 function removeDocument(id) {
+  const target = documents.find((doc) => doc.id === id);
+  if (target) {
+    cleanupDocumentResources(target);
+    if (viewerVisible && activeViewerDocumentId === id) {
+      closeDocumentViewer();
+    }
+  }
+
   documents = documents.filter((doc) => doc.id !== id);
   renderDocumentList();
   updateProcessingInfo('Dokument wurde entfernt.');
 }
 
 function resetDocuments() {
+  documents.forEach((doc) => cleanupDocumentResources(doc));
+  if (viewerVisible) {
+    closeDocumentViewer();
+  }
+
   documents = seedDocuments.map((doc) => ({ ...doc }));
   renderDocumentList();
   updateProcessingInfo('Liste wurde auf den Demo-Ausgangszustand zurückgesetzt.');
 }
 
 function createDocumentFromFile(file) {
-  return {
+  const doc = {
     id: createDocumentId(),
     name: file.name ?? 'Unbenannt',
     mimeType: file.type ?? 'application/octet-stream',
@@ -240,6 +453,16 @@ function createDocumentFromFile(file) {
     notes: 'Lokale Datei – keine Übertragung erfolgt.',
     file,
   };
+
+  if (isPdfDocument(doc)) {
+    try {
+      doc.inlineUrl = URL.createObjectURL(file);
+    } catch (error) {
+      console.warn('PDF-Datei konnte nicht für die Vorschau vorbereitet werden.', error);
+    }
+  }
+
+  return doc;
 }
 
 function readPreviewForFile(doc) {
@@ -375,6 +598,7 @@ function init() {
   documents = seedDocuments.map((doc) => ({ ...doc }));
   renderDocumentList();
   updateProcessingInfo('Bereit für neue Uploads.');
+  registerViewerEvents();
   attachEventListeners();
 }
 

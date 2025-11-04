@@ -34,8 +34,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 6. **Dokumentenverwaltung (DMS-Mock)** – Implementiere eine Drag-&-Drop-Zone für Datei-Uploads mit Upload-Liste, Vorschau und Delete-Button. Es genügt ein Mock-Verhalten (kein echter Upload).
    Status: ✅ erledigt – 2025-11-04
 
-7. **Dokument-Viewer** – Baue ein modales Fenster zum Anzeigen von PDF-Dokumenten (z. B. über eingebettetes `<iframe>`).  
-   Status: ⬜
+7. **Dokument-Viewer** – Baue ein modales Fenster zum Anzeigen von PDF-Dokumenten (z. B. über eingebettetes `<iframe>`).
+   Status: ✅ erledigt – 2025-11-04
 
 8. **Vorlagen-Assistent** – Füge ein einfaches Formular hinzu, mit dem Textbausteine oder Vorlagen angezeigt, angepasst und in das Dokument eingefügt werden können.  
    Status: ⬜
