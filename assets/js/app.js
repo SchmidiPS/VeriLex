@@ -151,4 +151,193 @@ if (demoButton) {
   });
 }
 
+function normalizeCaseEntry(entry) {
+  return {
+    caseNumber: String(entry.caseNumber ?? '').trim(),
+    title: String(entry.title ?? '').trim(),
+    client: String(entry.client ?? '').trim(),
+    deadlineStatus: String(entry.deadlineStatus ?? 'Status unbekannt').trim(),
+    deadlineCategory: (entry.deadlineCategory ?? 'info').toString().trim().toLowerCase(),
+  };
+}
+
+function determineBadgeModifier(category) {
+  const allowed = new Set(['ok', 'warning', 'critical', 'info']);
+  return allowed.has(category) ? category : 'info';
+}
+
+function initCaseDirectory() {
+  const dataElement = document.getElementById('case-data');
+  if (!dataElement) {
+    return;
+  }
+
+  let parsedCases = [];
+  try {
+    const rawText = dataElement.textContent ?? '[]';
+    parsedCases = JSON.parse(rawText);
+  } catch (error) {
+    console.error('Die Akten-Daten konnten nicht geparst werden.', error);
+    overlayInstance?.show?.({
+      title: 'Fehler beim Laden der Akten',
+      message: 'Die Demo-Akten konnten nicht geladen werden.',
+      details: error,
+    });
+    return;
+  }
+
+  const cases = Array.isArray(parsedCases)
+    ? parsedCases.map((entry) => normalizeCaseEntry(entry))
+    : [];
+
+  const grid = document.getElementById('case-grid');
+  const emptyState = document.getElementById('case-empty-state');
+  const summary = document.getElementById('case-result-summary');
+  const searchInput = document.getElementById('case-search-input');
+
+  if (!grid || !emptyState || !summary || !searchInput) {
+    return;
+  }
+
+  let currentList = cases.slice();
+  let selectionMessage = '';
+  let renderedCards = [];
+
+  const updateSummary = (count) => {
+    const baseMessage = count === 1 ? '1 Akte gefunden' : `${count} Akten gefunden`;
+    summary.textContent = selectionMessage ? `${baseMessage} — ${selectionMessage}` : baseMessage;
+  };
+
+  const renderList = (list) => {
+    grid.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+
+    list.forEach((caseEntry, index) => {
+      const badgeModifier = determineBadgeModifier(caseEntry.deadlineCategory);
+      const card = document.createElement('article');
+      card.className = 'case-card';
+      card.tabIndex = 0;
+      card.dataset.index = String(index);
+      card.dataset.caseNumber = caseEntry.caseNumber;
+      card.dataset.caseTitle = caseEntry.title;
+      card.setAttribute('role', 'listitem');
+      card.setAttribute(
+        'aria-label',
+        `${caseEntry.caseNumber || 'Ohne Aktenzeichen'} – ${caseEntry.title || 'Ohne Titel'}`
+      );
+
+      card.innerHTML = `
+        <div class="case-card__meta">
+          <span class="case-card__number" aria-hidden="true">${caseEntry.caseNumber || 'n/a'}</span>
+          <span class="case-badge case-badge--${badgeModifier}">${caseEntry.deadlineStatus}</span>
+        </div>
+        <h3 class="case-card__title">${caseEntry.title || 'Unbenannte Akte'}</h3>
+        <p class="case-card__client">
+          <span class="case-card__client-label">Mandant:</span>
+          <span>${caseEntry.client || 'unbekannt'}</span>
+        </p>
+        <div class="case-card__footer">
+          <span class="case-card__action-hint">Enter oder Leertaste markiert die Akte</span>
+          <span class="case-card__icon" aria-hidden="true">⟶</span>
+        </div>
+      `;
+
+      fragment.appendChild(card);
+    });
+
+    grid.appendChild(fragment);
+    renderedCards = Array.from(grid.querySelectorAll('.case-card'));
+    grid.hidden = list.length === 0;
+    emptyState.hidden = list.length !== 0;
+    selectionMessage = '';
+    updateSummary(list.length);
+  };
+
+  const filterCases = (query) => {
+    if (!query) {
+      return cases.slice();
+    }
+
+    const normalizedQuery = query.toLocaleLowerCase('de-DE');
+    return cases.filter((caseEntry) => {
+      const numberMatch = caseEntry.caseNumber.toLocaleLowerCase('de-DE').includes(normalizedQuery);
+      const titleMatch = caseEntry.title.toLocaleLowerCase('de-DE').includes(normalizedQuery);
+      return numberMatch || titleMatch;
+    });
+  };
+
+  const handleSearchInput = (event) => {
+    const input = event.target;
+    const value = input instanceof HTMLInputElement ? input.value.trim() : '';
+    currentList = filterCases(value);
+    renderList(currentList);
+  };
+
+  const announceSelection = (caseEntry) => {
+    if (!caseEntry) {
+      selectionMessage = '';
+      updateSummary(currentList.length);
+      return;
+    }
+
+    selectionMessage = `Akte „${caseEntry.title || caseEntry.caseNumber}“ markiert`;
+    updateSummary(currentList.length);
+  };
+
+  const handleGridKeyDown = (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || !target.classList.contains('case-card')) {
+      return;
+    }
+
+    const index = Number.parseInt(target.dataset.index ?? '', 10);
+    if (Number.isNaN(index)) {
+      return;
+    }
+
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      const nextIndex = Math.min(index + 1, renderedCards.length - 1);
+      if (nextIndex !== index) {
+        event.preventDefault();
+        renderedCards[nextIndex]?.focus();
+      }
+      return;
+    }
+
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      const nextIndex = Math.max(index - 1, 0);
+      if (nextIndex !== index) {
+        event.preventDefault();
+        renderedCards[nextIndex]?.focus();
+      }
+      return;
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault();
+      renderedCards[0]?.focus();
+      return;
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault();
+      renderedCards[renderedCards.length - 1]?.focus();
+      return;
+    }
+
+    if (event.key === ' ' || event.key === 'Enter') {
+      event.preventDefault();
+      announceSelection(currentList[index]);
+    }
+  };
+
+  searchInput.addEventListener('input', handleSearchInput);
+  grid.addEventListener('keydown', handleGridKeyDown);
+
+  currentList = cases.slice();
+  renderList(currentList);
+}
+
+initCaseDirectory();
+
 export { GlobalErrorOverlay, overlayInstance };
