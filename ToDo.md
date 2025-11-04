@@ -28,8 +28,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 4. **Akten-Detailseite & Timeline** – Baue eine Detailseite, die die Historie eines Akts als chronologische Timeline darstellt (Dokumente, Notizen, Fristen, Aktivitäten). Nutze ein responsives Layout mit Seitenleiste für Akteninfos.
    Status: ✅ erledigt – 2025-11-04
 
-5. **Mandats-Wizard (mehrstufig)** – Erstelle einen Wizard mit mehreren Schritten zur Mandatsanlage (Klientendaten → Gegner → Akteninhalt → Abschluss). Jeder Schritt soll eigene Validierung und Fortschrittsanzeige besitzen.  
-   Status: ⬜
+5. **Mandats-Wizard (mehrstufig)** – Erstelle einen Wizard mit mehreren Schritten zur Mandatsanlage (Klientendaten → Gegner → Akteninhalt → Abschluss). Jeder Schritt soll eigene Validierung und Fortschrittsanzeige besitzen.
+   Status: ✅ erledigt – 2025-11-04
 
 6. **Dokumentenverwaltung (DMS-Mock)** – Implementiere eine Drag-&-Drop-Zone für Datei-Uploads mit Upload-Liste, Vorschau und Delete-Button. Es genügt ein Mock-Verhalten (kein echter Upload).  
    Status: ⬜

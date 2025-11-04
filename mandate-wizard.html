@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Mandats-Wizard</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>VeriLex Demo</h1>
+      <p class="app-subtitle">Mandatsanlage in vier Schritten</p>
+    </header>
+
+    <main class="app-main" aria-live="polite">
+      <nav class="wizard-breadcrumb" aria-label="Navigation">
+        <a class="wizard-breadcrumb__link" href="index.html">&larr; Zur Übersicht</a>
+      </nav>
+
+      <section class="app-card wizard-card" aria-labelledby="wizard-title">
+        <header class="wizard-card__header">
+          <h2 id="wizard-title">Mandatsanlage</h2>
+          <p id="wizard-description" class="wizard-card__description">
+            Erfassen Sie die erforderlichen Informationen Schritt für Schritt. Alle Eingaben lassen sich vor dem Abschluss prüfen und anpassen.
+          </p>
+        </header>
+
+        <ol class="wizard-progress" role="list" aria-label="Fortschritt Mandatsanlage">
+          <li class="wizard-progress__step" data-progress-step="1" role="listitem">
+            <span class="wizard-progress__label">Klientendaten</span>
+          </li>
+          <li class="wizard-progress__step" data-progress-step="2" role="listitem">
+            <span class="wizard-progress__label">Gegner</span>
+          </li>
+          <li class="wizard-progress__step" data-progress-step="3" role="listitem">
+            <span class="wizard-progress__label">Akteninhalt</span>
+          </li>
+          <li class="wizard-progress__step" data-progress-step="4" role="listitem">
+            <span class="wizard-progress__label">Abschluss</span>
+          </li>
+        </ol>
+
+        <form id="mandate-form" class="wizard-form" novalidate aria-describedby="wizard-description">
+          <section class="wizard-step" data-step="1" aria-label="Klientendaten">
+            <fieldset class="wizard-fieldset">
+              <legend class="wizard-step__title" tabindex="-1">Schritt 1: Klientendaten</legend>
+              <p class="wizard-step__hint">Alle Pflichtfelder sind mit einem Sternchen gekennzeichnet.</p>
+
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="mandate-number">Mandatsnummer *</label>
+                  <input
+                    id="mandate-number"
+                    name="mandateNumber"
+                    type="text"
+                    inputmode="text"
+                    autocomplete="off"
+                    required
+                    maxlength="32"
+                    aria-describedby="mandate-number-error"
+                  />
+                  <p id="mandate-number-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+
+                <div class="form-field">
+                  <label for="client-name">Mandant*in *</label>
+                  <input
+                    id="client-name"
+                    name="clientName"
+                    type="text"
+                    autocomplete="organization"
+                    required
+                    maxlength="80"
+                    aria-describedby="client-name-error"
+                  />
+                  <p id="client-name-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+
+                <div class="form-field">
+                  <label for="contact-email">E-Mail *</label>
+                  <input
+                    id="contact-email"
+                    name="contactEmail"
+                    type="email"
+                    autocomplete="email"
+                    required
+                    maxlength="120"
+                    aria-describedby="contact-email-error"
+                  />
+                  <p id="contact-email-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+
+                <div class="form-field">
+                  <label for="contact-phone">Telefon</label>
+                  <input
+                    id="contact-phone"
+                    name="contactPhone"
+                    type="tel"
+                    autocomplete="tel"
+                    pattern="^[0-9+()\/\-\s]{6,}$"
+                    maxlength="40"
+                    aria-describedby="contact-phone-error"
+                  />
+                  <p id="contact-phone-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="practice-area">Rechtsgebiet *</label>
+                  <select
+                    id="practice-area"
+                    name="practiceArea"
+                    required
+                    aria-describedby="practice-area-error"
+                  >
+                    <option value="" disabled selected>Bitte wählen</option>
+                    <option value="arbeitsrecht">Arbeitsrecht</option>
+                    <option value="gesellschaftsrecht">Gesellschaftsrecht</option>
+                    <option value="familienrecht">Familienrecht</option>
+                    <option value="strafrecht">Strafrecht</option>
+                    <option value="zivilrecht">Zivilrecht</option>
+                  </select>
+                  <p id="practice-area-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+
+                <div class="form-field">
+                  <label for="responsible-lawyer">Verantwortliche Person *</label>
+                  <input
+                    id="responsible-lawyer"
+                    name="responsibleLawyer"
+                    type="text"
+                    autocomplete="name"
+                    required
+                    maxlength="80"
+                    aria-describedby="responsible-lawyer-error"
+                  />
+                  <p id="responsible-lawyer-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+            </fieldset>
+          </section>
+
+          <section class="wizard-step" data-step="2" aria-label="Gegnerische Partei" hidden>
+            <fieldset class="wizard-fieldset">
+              <legend class="wizard-step__title" tabindex="-1">Schritt 2: Gegnerische Partei</legend>
+              <p class="wizard-step__hint">Erfassen Sie die wichtigsten Eckdaten zur gegnerischen Partei.</p>
+
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="opponent-name">Name der Gegenpartei *</label>
+                  <input
+                    id="opponent-name"
+                    name="opponentName"
+                    type="text"
+                    required
+                    maxlength="80"
+                    aria-describedby="opponent-name-error"
+                  />
+                  <p id="opponent-name-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+
+                <div class="form-field">
+                  <label for="opponent-contact">Kontakt</label>
+                  <input
+                    id="opponent-contact"
+                    name="opponentContact"
+                    type="text"
+                    maxlength="120"
+                    aria-describedby="opponent-contact-error"
+                  />
+                  <p id="opponent-contact-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="opponent-notes">Notizen</label>
+                <textarea
+                  id="opponent-notes"
+                  name="opponentNotes"
+                  rows="4"
+                  maxlength="500"
+                  aria-describedby="opponent-notes-error"
+                ></textarea>
+                <p id="opponent-notes-error" class="field-error" role="status" aria-live="polite"></p>
+              </div>
+            </fieldset>
+          </section>
+
+          <section class="wizard-step" data-step="3" aria-label="Akteninhalt" hidden>
+            <fieldset class="wizard-fieldset">
+              <legend class="wizard-step__title" tabindex="-1">Schritt 3: Akteninhalt</legend>
+              <p class="wizard-step__hint">Beschreiben Sie den Sachverhalt und priorisieren Sie das Mandat.</p>
+
+              <div class="form-field">
+                <label for="matter-summary">Kurzbeschreibung *</label>
+                <textarea
+                  id="matter-summary"
+                  name="matterSummary"
+                  rows="5"
+                  required
+                  maxlength="1000"
+                  aria-describedby="matter-summary-error"
+                ></textarea>
+                <p id="matter-summary-error" class="field-error" role="status" aria-live="polite"></p>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="urgency-level">Dringlichkeit *</label>
+                  <select
+                    id="urgency-level"
+                    name="urgency"
+                    required
+                    aria-describedby="urgency-level-error"
+                  >
+                    <option value="" disabled selected>Bitte wählen</option>
+                    <option value="hoch">Hoch</option>
+                    <option value="mittel">Mittel</option>
+                    <option value="niedrig">Niedrig</option>
+                  </select>
+                  <p id="urgency-level-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+
+                <div class="form-field">
+                  <label for="initial-deadline">Erste Frist</label>
+                  <input
+                    id="initial-deadline"
+                    name="initialDeadline"
+                    type="date"
+                    aria-describedby="initial-deadline-error"
+                  />
+                  <p id="initial-deadline-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+
+              <fieldset class="form-field form-field--inline">
+                <legend>Benötigte Dokumente</legend>
+                <div class="checkbox-group">
+                  <label class="checkbox">
+                    <input type="checkbox" name="documents" value="vertrag" /> Vertragsunterlagen
+                  </label>
+                  <label class="checkbox">
+                    <input type="checkbox" name="documents" value="korrespondenz" /> Schriftverkehr
+                  </label>
+                  <label class="checkbox">
+                    <input type="checkbox" name="documents" value="beweise" /> Beweisstücke
+                  </label>
+                  <label class="checkbox">
+                    <input type="checkbox" name="documents" value="aktennotizen" /> Interne Aktennotizen
+                  </label>
+                </div>
+              </fieldset>
+            </fieldset>
+          </section>
+
+          <section class="wizard-step" data-step="4" aria-label="Zusammenfassung" hidden>
+            <fieldset class="wizard-fieldset">
+              <legend class="wizard-step__title" tabindex="-1">Schritt 4: Abschluss</legend>
+              <p class="wizard-step__hint">Prüfen Sie die Angaben und bestätigen Sie die Mandatsanlage.</p>
+
+              <div id="wizard-summary" class="wizard-summary" role="status" aria-live="polite"></div>
+
+              <div class="form-field">
+                <label class="checkbox">
+                  <input id="terms-confirmation" type="checkbox" required aria-describedby="terms-confirmation-error" />
+                  Ich bestätige, dass alle Angaben geprüft wurden.
+                </label>
+                <p id="terms-confirmation-error" class="field-error" role="status" aria-live="polite"></p>
+              </div>
+            </fieldset>
+          </section>
+
+          <div class="wizard-navigation" role="group" aria-label="Wizard-Steuerung">
+            <button type="button" class="btn btn-secondary" id="wizard-prev" data-action="prev" disabled>
+              Zurück
+            </button>
+            <button type="button" class="btn btn-primary" id="wizard-next" data-action="next">
+              Weiter
+            </button>
+            <button type="submit" class="btn btn-success" id="wizard-submit" data-action="submit" hidden>
+              Mandat anlegen
+            </button>
+          </div>
+        </form>
+
+        <div id="wizard-success" class="wizard-success" role="alert" hidden tabindex="-1">
+          <h3>Mandat erfolgreich vorbereitet</h3>
+          <p>
+            Die Daten wurden gespeichert. Als nächstes kann das Team die Akte freigeben oder weitere Dokumente anfordern.
+          </p>
+          <button type="button" class="btn" id="wizard-reset">Neues Mandat erfassen</button>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details" hidden>
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">
+            Seite neu laden
+          </button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">
+            Schließen
+          </button>
+        </footer>
+      </div>
+    </div>
+
+    <script src="assets/js/mandate-wizard.js" type="module"></script>
+  </body>
+</html>
