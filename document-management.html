@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Dokumentenverwaltung</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>VeriLex Demo</h1>
+      <p class="app-subtitle">Dokumentenverwaltung (Mock)</p>
+    </header>
+
+    <main class="app-main document-manager-main" aria-live="polite">
+      <nav class="case-breadcrumb" aria-label="Brotkrumen">
+        <a class="case-breadcrumb__link" href="index.html">&larr; Zur Startseite</a>
+      </nav>
+
+      <section class="app-card" aria-labelledby="document-dropzone-title">
+        <header class="document-manager__header">
+          <h2 id="document-dropzone-title">Dateien hochladen &amp; verwalten</h2>
+          <p class="document-manager__description">
+            Laden Sie neue Dokumente per Drag &amp; Drop hoch, ergänzen Sie Notizen und behalten Sie einen
+            schnellen Überblick über alle hochgeladenen Dateien. Der Upload ist in dieser Demo rein
+            simuliert.
+          </p>
+        </header>
+
+        <div
+          id="document-dropzone"
+          class="document-dropzone"
+          role="button"
+          tabindex="0"
+          aria-describedby="document-dropzone-hint"
+          aria-label="Dateien hochladen"
+        >
+          <div class="document-dropzone__icon" aria-hidden="true">⬆</div>
+          <p class="document-dropzone__text">Dateien hierher ziehen oder auswählen</p>
+          <p id="document-dropzone-hint" class="document-dropzone__hint">
+            Unterstützt werden PDF, Bilder und gängige Office-Dokumente. Mehrere Dateien sind möglich.
+          </p>
+          <div class="document-dropzone__actions">
+            <button type="button" class="btn btn-primary" id="document-select-files">
+              Dateien auswählen
+            </button>
+            <button type="button" class="btn btn-secondary" id="document-clear-all">
+              Liste zurücksetzen
+            </button>
+          </div>
+          <input
+            type="file"
+            id="document-file-input"
+            class="document-dropzone__file-input"
+            multiple
+            aria-hidden="true"
+            tabindex="-1"
+          />
+        </div>
+      </section>
+
+      <section class="document-list-section" aria-labelledby="document-list-title">
+        <div class="document-list__header">
+          <div>
+            <h2 id="document-list-title">Hochgeladene Dokumente</h2>
+            <p class="document-upload-summary" id="document-upload-summary"></p>
+          </div>
+          <p id="document-processing-info" class="document-manager__description"></p>
+        </div>
+
+        <ul id="document-list" class="document-list" role="list"></ul>
+        <p id="document-empty-state" class="document-empty-state" hidden>
+          Noch wurden keine Dokumente hochgeladen. Nutzen Sie die Drag-&amp;-Drop-Zone, um die Liste zu
+          füllen.
+        </p>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details" hidden>
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="application/json" id="document-seed-data">
+      [
+        {
+          "id": "doc-001",
+          "name": "Klageentwurf.pdf",
+          "mimeType": "application/pdf",
+          "size": 584312,
+          "uploadedAt": "2025-10-29T09:30:00+01:00",
+          "uploadedBy": "RAin Dr. Hannah Keller",
+          "status": "Entwurf – finale Prüfung läuft",
+          "tags": ["Klage", "Entwurf"],
+          "notes": "Vor Versand an Mandantin prüfen."
+        },
+        {
+          "id": "doc-002",
+          "name": "Beweisfoto_A1.jpg",
+          "mimeType": "image/jpeg",
+          "size": 341233,
+          "uploadedAt": "2025-10-20T16:12:00+02:00",
+          "uploadedBy": "Syndikus RA Tim Berger",
+          "status": "Freigegeben",
+          "tags": ["Beweis", "Bild"],
+          "notes": "Referenz für Abschnitt 4 des Schriftsatzes."
+        },
+        {
+          "id": "doc-003",
+          "name": "Vergleichsentwurf.docx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "size": 214560,
+          "uploadedAt": "2025-10-05T11:04:00+02:00",
+          "uploadedBy": "RAin Dr. Hannah Keller",
+          "status": "Feedback des Mandanten erforderlich",
+          "tags": ["Vergleich", "ToDo"],
+          "notes": "Mandantenfeedback bis Ende KW45 einarbeiten."
+        }
+      ]
+    </script>
+
+    <script src="assets/js/document-management.js" type="module"></script>
+  </body>
+</html>
