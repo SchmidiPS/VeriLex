@@ -13,7 +13,7 @@
     </header>
 
     <main class="app-main" aria-live="polite">
-      <section class="app-card">
+      <section class="app-card welcome-card">
         <h2>Willkommen</h2>
         <p>
           Diese Oberfläche wird Schritt für Schritt gemäß der Aufgabenliste in
@@ -23,6 +23,38 @@
         <button type="button" id="trigger-demo-error" class="btn btn-primary">
           Demo-Fehler auslösen
         </button>
+      </section>
+
+      <section class="case-directory" aria-labelledby="case-directory-title">
+        <div class="case-directory__header">
+          <div>
+            <h2 id="case-directory-title">Aktenübersicht</h2>
+            <p class="case-directory__description">
+              Durchsuchen Sie alle Demo-Akten nach Aktenzeichen oder Titel und behalten Sie Fristen im Blick.
+            </p>
+          </div>
+          <form class="case-directory__search" role="search" aria-label="Akten durchsuchen">
+            <label class="visually-hidden" for="case-search-input">Akten durchsuchen</label>
+            <input
+              id="case-search-input"
+              type="search"
+              name="query"
+              placeholder="Nach Aktenzeichen oder Titel suchen"
+              autocomplete="off"
+              spellcheck="false"
+              aria-describedby="case-result-summary"
+              aria-controls="case-grid"
+            />
+          </form>
+        </div>
+
+        <p id="case-result-summary" class="case-directory__summary" role="status" aria-live="polite"></p>
+
+        <div id="case-grid" class="case-grid" role="list"></div>
+
+        <p id="case-empty-state" class="case-empty-state" hidden>
+          Keine Akte entspricht der aktuellen Suche. Bitte passen Sie den Suchbegriff an.
+        </p>
       </section>
     </main>
 
@@ -62,6 +94,53 @@
         </footer>
       </div>
     </div>
+
+    <script type="application/json" id="case-data">
+      [
+        {
+          "caseNumber": "V-2024-001",
+          "title": "Vertragsprüfung Müller GmbH",
+          "client": "Müller GmbH",
+          "deadlineStatus": "Frist läuft in 5 Tagen",
+          "deadlineCategory": "warning"
+        },
+        {
+          "caseNumber": "A-2024-017",
+          "title": "Arbeitsrechtliche Beratung Schmidt",
+          "client": "Eva Schmidt",
+          "deadlineStatus": "Keine offenen Fristen",
+          "deadlineCategory": "ok"
+        },
+        {
+          "caseNumber": "I-2024-004",
+          "title": "Investitionsprüfung GreenTech",
+          "client": "GreenTech Holding",
+          "deadlineStatus": "Frist heute fällig",
+          "deadlineCategory": "critical"
+        },
+        {
+          "caseNumber": "M-2023-089",
+          "title": "Mietrechtliche Streitigkeit Weber",
+          "client": "Jonas Weber",
+          "deadlineStatus": "Frist wurde eingehalten",
+          "deadlineCategory": "ok"
+        },
+        {
+          "caseNumber": "S-2024-032",
+          "title": "Steuerprüfung Contoso AG",
+          "client": "Contoso AG",
+          "deadlineStatus": "Frist überfällig",
+          "deadlineCategory": "critical"
+        },
+        {
+          "caseNumber": "F-2024-011",
+          "title": "Familienrechtliche Mediation Krause",
+          "client": "Familie Krause",
+          "deadlineStatus": "Frist läuft in 12 Tagen",
+          "deadlineCategory": "warning"
+        }
+      ]
+    </script>
 
     <script src="assets/js/app.js" type="module"></script>
   </body>
