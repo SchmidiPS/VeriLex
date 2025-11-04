@@ -77,6 +77,41 @@
     </main>
 
     <div
+      id="document-viewer"
+      class="document-viewer"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="document-viewer-title"
+      hidden
+    >
+      <div class="document-viewer__backdrop" data-viewer-action="close" aria-hidden="true"></div>
+      <div class="document-viewer__dialog" role="document">
+        <header class="document-viewer__header">
+          <h2 id="document-viewer-title">Dokument anzeigen</h2>
+          <button
+            type="button"
+            class="document-viewer__close"
+            aria-label="Dokument-Viewer schließen"
+            data-viewer-action="close"
+          >
+            ×
+          </button>
+        </header>
+        <p id="document-viewer-meta" class="document-viewer__meta" aria-live="polite"></p>
+        <div class="document-viewer__body">
+          <iframe
+            id="document-viewer-frame"
+            class="document-viewer__frame"
+            title="PDF-Vorschau"
+            loading="lazy"
+            hidden
+          ></iframe>
+          <div id="document-viewer-fallback" class="document-viewer__fallback" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <div
       id="global-error-overlay"
       class="error-overlay"
       role="alertdialog"
@@ -111,7 +146,7 @@
 
     <script type="application/json" id="document-seed-data">
       [
-        {
+        { 
           "id": "doc-001",
           "name": "Klageentwurf.pdf",
           "mimeType": "application/pdf",
@@ -120,7 +155,8 @@
           "uploadedBy": "RAin Dr. Hannah Keller",
           "status": "Entwurf – finale Prüfung läuft",
           "tags": ["Klage", "Entwurf"],
-          "notes": "Vor Versand an Mandantin prüfen."
+          "notes": "Vor Versand an Mandantin prüfen.",
+          "viewerUrl": "assets/mock/verilex-demo.pdf"
         },
         {
           "id": "doc-002",
