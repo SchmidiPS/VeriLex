@@ -2406,3 +2406,238 @@ body {
     justify-content: center;
   }
 }
+
+.receivables-main {
+  width: min(1100px, 100%);
+  align-items: stretch;
+}
+
+.receivables-board {
+  width: 100%;
+  background: #fff;
+  border-radius: 18px;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(31, 60, 136, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.receivables-board__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: clamp(1rem, 3vw, 2rem);
+}
+
+.receivables-board__description {
+  margin: 0.35rem 0 0;
+  max-width: 60ch;
+  color: #4b5563;
+}
+
+.receivables-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: clamp(0.75rem, 3vw, 1.25rem);
+  margin: 0;
+  padding: 0;
+}
+
+.receivables-summary__item {
+  border-radius: 14px;
+  padding: 0.85rem 1.15rem;
+  display: grid;
+  gap: 0.45rem;
+  border: 1px solid rgba(47, 116, 192, 0.12);
+  background: rgba(47, 116, 192, 0.06);
+}
+
+.receivables-summary__item--overdue {
+  border-color: rgba(220, 38, 38, 0.35);
+  background: rgba(220, 38, 38, 0.14);
+}
+
+.receivables-summary__item--paid {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.14);
+}
+
+.receivables-summary__item dt {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4b5563;
+}
+
+.receivables-summary__item dd {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-weight: 600;
+  color: #1f3c88;
+}
+
+.receivables-summary__count {
+  font-size: 1.3rem;
+}
+
+.receivables-summary__amount {
+  font-size: 1.05rem;
+  color: #1f2933;
+}
+
+.receivables-highlight {
+  margin: 0;
+  padding: 0.85rem 1.15rem;
+  border-left: 4px solid #2f74c0;
+  background: rgba(47, 116, 192, 0.08);
+  border-radius: 12px;
+  font-weight: 600;
+  color: #1f3c88;
+}
+
+.receivables-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem clamp(0.85rem, 3vw, 1.5rem);
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border-radius: 16px;
+  border: 1px solid rgba(47, 116, 192, 0.12);
+  background: rgba(47, 116, 192, 0.06);
+}
+
+.receivables-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.receivables-filter__label {
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #4b5563;
+}
+
+.receivables-filter--checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.receivables-filter--checkbox label {
+  font-weight: 600;
+  color: #1f2933;
+}
+
+.receivables-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+.receivables-table thead {
+  background: rgba(47, 116, 192, 0.08);
+}
+
+.receivables-table th,
+.receivables-table td {
+  text-align: left;
+  padding: 0.75rem 0.95rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  vertical-align: top;
+}
+
+.receivables-table th {
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.receivables-table__primary {
+  display: block;
+  font-weight: 600;
+  color: #1f3c88;
+}
+
+.receivables-table__secondary {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.receivables-table__cell--amount {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.receivables-table__amount {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1f2933;
+}
+
+.receivables-table__cell--status {
+  min-width: 180px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.status-badge--open {
+  background: rgba(47, 116, 192, 0.15);
+  border-color: rgba(47, 116, 192, 0.3);
+  color: #1f3c88;
+}
+
+.status-badge--overdue {
+  background: rgba(220, 38, 38, 0.18);
+  border-color: rgba(220, 38, 38, 0.35);
+  color: #b91c1c;
+}
+
+.status-badge--paid {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #047857;
+}
+
+.receivables-table-summary {
+  margin: 0;
+  font-weight: 600;
+  color: #1f2933;
+}
+
+.receivables-empty-state {
+  margin: 0;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.05);
+  color: #4b5563;
+  font-weight: 500;
+}
+
+@media (max-width: 720px) {
+  .receivables-table {
+    min-width: 100%;
+  }
+
+  .receivables-table__cell--status {
+    min-width: unset;
+  }
+}
