@@ -52,8 +52,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 12. **Offene-Posten-Übersicht (Mock)** – Zeige Rechnungen mit Status „bezahlt“, „überfällig“, „offen“. Keine echte Datenbank nötig.
     Status: ✅ erledigt – 2025-11-05
 
-13. **E-Mail-Integration (Mock)** – Erstelle eine Demo-Inbox mit Nachrichtenliste und Detailansicht. Alle E-Mails sind Dummy-Einträge aus JSON.  
-    Status: ⬜
+13. **E-Mail-Integration (Mock)** – Erstelle eine Demo-Inbox mit Nachrichtenliste und Detailansicht. Alle E-Mails sind Dummy-Einträge aus JSON.
+    Status: ✅ erledigt – 2025-11-05
 
 14. **ERV-Paket-Builder (Mock)** – Simuliere das Erstellen eines elektronischen Rechtsverkehr-Pakets mit Upload-Liste und Validierungsanzeige.  
     Status: ⬜

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – E-Mail-Integration (Mock)</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>VeriLex Inbox</h1>
+      <p class="app-subtitle">
+        Demo einer kanzleitypischen E-Mail-Ansicht mit Nachrichtenliste, Detailbereich und Schnellaktionen.
+      </p>
+      <div class="welcome-actions">
+        <a class="btn btn-secondary" href="index.html">Zur Übersicht</a>
+        <a class="btn btn-secondary" href="case-detail.html">Akten-Timeline</a>
+        <a class="btn btn-secondary" href="document-management.html">Dokumentenverwaltung</a>
+      </div>
+    </header>
+
+    <main class="app-main mail-main" aria-live="polite">
+      <section class="mail-layout" aria-labelledby="mail-title">
+        <header class="mail-layout__header">
+          <div>
+            <h2 id="mail-title">Demo-Inbox für Kanzleien</h2>
+            <p class="mail-layout__description">
+              Alle Nachrichten basieren auf Platzhalterdaten. Nutzen Sie Suche, Filter und Schnellaktionen, um typische Kanzleiabläufe nachzustellen.
+            </p>
+          </div>
+          <dl class="mail-stats" aria-label="Nachrichtenübersicht">
+            <div class="mail-stats__item">
+              <dt>Gesamt</dt>
+              <dd id="mail-count-total">0</dd>
+            </div>
+            <div class="mail-stats__item">
+              <dt>Ungelesen</dt>
+              <dd id="mail-count-unread">0</dd>
+            </div>
+            <div class="mail-stats__item">
+              <dt>Archiviert</dt>
+              <dd id="mail-count-archived">0</dd>
+            </div>
+          </dl>
+        </header>
+
+        <form class="mail-toolbar" role="search" aria-label="Nachrichten filtern" novalidate>
+          <div class="mail-toolbar__group">
+            <label class="mail-toolbar__label" for="mail-search">Schnellsuche</label>
+            <input
+              type="search"
+              id="mail-search"
+              name="query"
+              placeholder="Betreff, Mandant oder Aktenzeichen"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <div class="mail-toolbar__group">
+            <label class="mail-toolbar__label" for="mail-status-filter">Status</label>
+            <select id="mail-status-filter" name="status">
+              <option value="all">Alle Nachrichten</option>
+              <option value="unread">Nur ungelesene</option>
+              <option value="archived">Archiv</option>
+            </select>
+          </div>
+          <div class="mail-toolbar__group">
+            <label class="mail-toolbar__label" for="mail-tag-filter">Kategorie</label>
+            <select id="mail-tag-filter" name="tag">
+              <option value="all">Alle Kategorien</option>
+            </select>
+          </div>
+          <div class="mail-toolbar__group mail-toolbar__group--compact">
+            <button type="button" id="mail-filter-unread" class="btn btn-ghost" aria-pressed="false">
+              Nur ungelesene anzeigen
+            </button>
+          </div>
+        </form>
+
+        <div class="mail-content">
+          <aside class="mail-sidebar" aria-labelledby="mail-list-title">
+            <header class="mail-sidebar__header">
+              <h3 id="mail-list-title">Nachrichten</h3>
+              <p id="mail-list-summary" class="mail-sidebar__summary" role="status">0 Nachrichten</p>
+            </header>
+            <div
+              id="mail-list"
+              class="mail-list"
+              role="listbox"
+              aria-describedby="mail-list-summary"
+              aria-labelledby="mail-list-title"
+              tabindex="0"
+            ></div>
+            <p id="mail-empty-state" class="mail-empty" hidden>
+              Für die aktuelle Filterkombination liegen keine Nachrichten vor.
+            </p>
+          </aside>
+
+          <article class="mail-detail" aria-labelledby="mail-detail-subject">
+            <div id="mail-detail-placeholder" class="mail-detail__placeholder">
+              <h3>Keine Nachricht ausgewählt</h3>
+              <p>Wählen Sie links eine Nachricht aus der Liste, um Details anzuzeigen.</p>
+            </div>
+
+            <div id="mail-detail-content" class="mail-detail__content" hidden>
+              <header class="mail-detail__header">
+                <div>
+                  <p class="mail-detail__meta">
+                    Akte <span id="mail-detail-case">–</span> · Mandant <span id="mail-detail-client">–</span>
+                  </p>
+                  <h3 id="mail-detail-subject">–</h3>
+                </div>
+                <div class="mail-detail__actions">
+                  <button type="button" id="mail-action-toggle-read" class="btn btn-secondary">
+                    Als gelesen markieren
+                  </button>
+                  <button type="button" id="mail-action-archive" class="btn btn-secondary">
+                    Archivieren
+                  </button>
+                </div>
+              </header>
+
+              <dl class="mail-detail__properties">
+                <div class="mail-detail__property">
+                  <dt>Von</dt>
+                  <dd>
+                    <span id="mail-detail-sender-name">–</span>
+                    <span class="mail-detail__address" id="mail-detail-sender-address">–</span>
+                  </dd>
+                </div>
+                <div class="mail-detail__property">
+                  <dt>An</dt>
+                  <dd id="mail-detail-recipients">–</dd>
+                </div>
+                <div class="mail-detail__property">
+                  <dt>Empfangen</dt>
+                  <dd>
+                    <span id="mail-detail-received">–</span>
+                    <span class="mail-detail__relative" id="mail-detail-relative">–</span>
+                  </dd>
+                </div>
+                <div class="mail-detail__property">
+                  <dt>Status</dt>
+                  <dd id="mail-detail-status">–</dd>
+                </div>
+                <div class="mail-detail__property">
+                  <dt>Kategorien</dt>
+                  <dd id="mail-detail-tags">–</dd>
+                </div>
+              </dl>
+
+              <section aria-labelledby="mail-detail-body-title" class="mail-detail__section">
+                <h4 id="mail-detail-body-title">Nachricht</h4>
+                <div id="mail-detail-body" class="mail-detail__body"></div>
+              </section>
+
+              <section aria-labelledby="mail-detail-attachments-title" class="mail-detail__section">
+                <h4 id="mail-detail-attachments-title">Anhänge</h4>
+                <ul id="mail-detail-attachments" class="mail-attachments"></ul>
+              </section>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details">
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="application/json" id="mail-data">
+      [
+        {
+          "id": "mail-001",
+          "subject": "Fristverlängerung Weber ./. Wohnbau AG",
+          "caseNumber": "M-2023-089",
+          "client": "Jonas Weber",
+          "sender": {
+            "name": "Sabine Keller",
+            "email": "sabine.keller@wohnbau-ag.demo"
+          },
+          "to": [
+            { "name": "Dr. Jana Vogt", "email": "jana.vogt@verilex.demo" }
+          ],
+          "cc": [
+            { "name": "Fristen-Team", "email": "fristen@verilex.demo" }
+          ],
+          "receivedAt": "2025-11-05T08:15:00+01:00",
+          "status": "unread",
+          "tags": ["Frist", "Zivilrecht"],
+          "body": [
+            "Guten Morgen Frau Dr. Vogt,",
+            "wir bestätigen den Eingang Ihres Antrags auf Fristverlängerung und benötigen noch das unterschriebene Vergleichsangebot der Gegenseite. Bitte senden Sie uns die Unterlagen bis spätestens morgen, damit wir der Kammer antworten können.",
+            "Mit freundlichen Grüßen",
+            "Sabine Keller"
+          ],
+          "attachments": [
+            { "name": "Fristvermerk.pdf", "url": "assets/mock/verilex-demo.pdf" }
+          ]
+        },
+        {
+          "id": "mail-002",
+          "subject": "Mandant Schmidt – Rückfrage zur Honorarvereinbarung",
+          "caseNumber": "A-2024-017",
+          "client": "Eva Schmidt",
+          "sender": {
+            "name": "Eva Schmidt",
+            "email": "eva.schmidt@example.com"
+          },
+          "to": [
+            { "name": "Team Arbeitsrecht", "email": "arbeitsrecht@verilex.demo" }
+          ],
+          "receivedAt": "2025-11-04T18:42:00+01:00",
+          "status": "read",
+          "tags": ["Mandant", "Honorar"],
+          "body": [
+            "Guten Abend liebes Team,",
+            "könnten Sie mir bitte erläutern, welche Positionen in der Kostennote vom 28.10. enthalten sind? Außerdem benötige ich einen groben Ausblick, welche Aufwände im Dezember auf mich zukommen.",
+            "Vielen Dank und viele Grüße",
+            "Eva Schmidt"
+          ],
+          "attachments": []
+        },
+        {
+          "id": "mail-003",
+          "subject": "Neue Dokumente im Datenraum Contoso AG",
+          "caseNumber": "S-2024-032",
+          "client": "Contoso AG",
+          "sender": {
+            "name": "Datenraum Service",
+            "email": "noreply@contoso-dataroom.demo"
+          },
+          "to": [
+            { "name": "Steuer-Team", "email": "steuer@verilex.demo" }
+          ],
+          "receivedAt": "2025-11-04T13:05:00+01:00",
+          "status": "unread",
+          "tags": ["Dokument", "Due Diligence"],
+          "body": [
+            "Sehr geehrte Damen und Herren,",
+            "im Datenraum wurden drei neue Dokumente zur steuerlichen Sonderprüfung bereitgestellt: aktualisierte Bilanz, Verrechnungspreisdokumentation und ein Fragenkatalog der Finanzbehörde.",
+            "Bitte bestätigen Sie den Abruf innerhalb von 24 Stunden.",
+            "Freundliche Grüße",
+            "Ihr Contoso Datenraum Service"
+          ],
+          "attachments": []
+        },
+        {
+          "id": "mail-004",
+          "subject": "Besprechungstermin GreenTech – Agenda & Unterlagen",
+          "caseNumber": "I-2024-004",
+          "client": "GreenTech Holding",
+          "sender": {
+            "name": "Philipp Maier",
+            "email": "philipp.maier@greentech.demo"
+          },
+          "to": [
+            { "name": "Investitions-Team", "email": "invest@verilex.demo" }
+          ],
+          "cc": [
+            { "name": "Maria Fernandes", "email": "maria.fernandes@greentech.demo" }
+          ],
+          "receivedAt": "2025-11-03T09:20:00+01:00",
+          "status": "read",
+          "tags": ["Termin", "Mandant"],
+          "body": [
+            "Guten Tag zusammen,",
+            "anbei übersende ich die Agenda für den Strategieworkshop am 07.11. inklusive der Themenblöcke Compliance, Lieferkettenmonitoring und ESG-Reporting.",
+            "Könnten Sie außerdem prüfen, ob die Unterlagen zur Kartellrechtsfreigabe vollständig sind?",
+            "Beste Grüße",
+            "Philipp Maier"
+          ],
+          "attachments": [
+            { "name": "Agenda_Workshop.pdf", "url": "assets/mock/verilex-demo.pdf" }
+          ]
+        },
+        {
+          "id": "mail-005",
+          "subject": "ERV-Sendebericht verfügbar",
+          "caseNumber": "ERV-2025-014",
+          "client": "Systemmeldung",
+          "sender": {
+            "name": "ERV Poststelle",
+            "email": "no-reply@erv.justiz.demo"
+          },
+          "to": [
+            { "name": "Posteingang", "email": "posteingang@verilex.demo" }
+          ],
+          "receivedAt": "2025-11-02T22:10:00+01:00",
+          "status": "archived",
+          "tags": ["ERV", "System"],
+          "body": [
+            "Sehr geehrte Damen und Herren,",
+            "der elektronische Rechtsverkehr meldet den erfolgreichen Versand des Pakets ERV-2025-014 an das Amtsgericht Köln.",
+            "Der qualifizierte Sendebericht steht im Portal zum Abruf bereit.",
+            "Mit freundlichen Grüßen",
+            "Ihre ERV Poststelle"
+          ],
+          "attachments": []
+        }
+      ]
+    </script>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/email-integration.js" type="module"></script>
+  </body>
+</html>
