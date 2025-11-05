@@ -44,7 +44,7 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
    Status: ✅ erledigt – 2025-11-05
 
 10. **Leistungsübersicht** – Erstelle eine Tabelle aller Leistungen mit Filter- und Summenfunktion (z. B. Stunden nach Mandant).  
-    Status: ⬜
+    Status: ✅ erledigt – 2025-11-05
 
 11. **Rechnungs-Wizard** – Baue einen Wizard zur Rechnungserstellung auf Basis erfasster Leistungen. Zeige Vorschau und PDF-Export (Dummy).  
     Status: ⬜

@@ -1,0 +1,386 @@
+import { overlayInstance } from './app.js';
+
+const STORAGE_KEY = 'verilex:time-entries';
+
+const searchInput = document.getElementById('performance-search');
+const clientSelect = document.getElementById('performance-client-filter');
+const periodSelect = document.getElementById('performance-period-filter');
+const tableBody = document.getElementById('performance-overview-table-body');
+const emptyState = document.getElementById('performance-overview-empty-state');
+const entryCountEl = document.getElementById('overview-entry-count');
+const totalDurationEl = document.getElementById('overview-total-duration');
+const averageDurationEl = document.getElementById('overview-average-duration');
+const breakdownList = document.getElementById('performance-breakdown-list');
+const breakdownSummary = document.getElementById('performance-breakdown-summary');
+
+let rawEntries = [];
+let caseMetadata = [];
+
+function parseCaseData() {
+  const dataElement = document.getElementById('performance-case-data');
+  if (!dataElement) {
+    return [];
+  }
+
+  try {
+    const rawText = dataElement.textContent ?? '[]';
+    const parsed = JSON.parse(rawText);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.map((entry) => ({
+      caseNumber: String(entry.caseNumber ?? '').trim(),
+      title: String(entry.title ?? '').trim(),
+      client: String(entry.client ?? 'Unbekannter Mandant').trim() || 'Unbekannter Mandant',
+    }));
+  } catch (error) {
+    console.error('Die Mandantendaten konnten nicht geladen werden.', error);
+    overlayInstance?.show?.({
+      title: 'Fehler beim Laden der Mandanten',
+      message: 'Die Zuordnung der Mandanten konnte nicht initialisiert werden.',
+      details: error,
+    });
+    return [];
+  }
+}
+
+function loadEntries() {
+  try {
+    const storedValue = window.localStorage.getItem(STORAGE_KEY);
+    if (!storedValue) {
+      rawEntries = [];
+      return;
+    }
+
+    const parsed = JSON.parse(storedValue);
+    rawEntries = Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error('Zeiteinträge konnten nicht geladen werden.', error);
+    overlayInstance?.show?.({
+      title: 'Fehler beim Lesen der Leistungsdaten',
+      message: 'Die gespeicherten Einträge konnten nicht aus dem Speicher geladen werden.',
+      details: error,
+    });
+    rawEntries = [];
+  }
+}
+
+function normalizeEntry(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return null;
+  }
+
+  const startedAt = entry.startedAt ? new Date(entry.startedAt) : null;
+  const endedAt = entry.endedAt ? new Date(entry.endedAt) : null;
+  const caseNumber = typeof entry.caseNumber === 'string' ? entry.caseNumber : '';
+  const caseTitle = typeof entry.caseTitle === 'string' ? entry.caseTitle : '';
+  const caseInfo = caseMetadata.find((item) => item.caseNumber === caseNumber);
+  const clientName = caseInfo?.client ?? (caseTitle || 'Allgemeine Leistung');
+  const durationMs = Number(entry.durationMs) || 0;
+
+  return {
+    id: entry.id ?? crypto.randomUUID?.() ?? `entry-${Date.now()}`,
+    activity: typeof entry.activity === 'string' && entry.activity.trim() ? entry.activity.trim() : 'Ohne Titel',
+    notes: typeof entry.notes === 'string' ? entry.notes.trim() : '',
+    startedAt: startedAt && !Number.isNaN(startedAt.getTime()) ? startedAt : null,
+    endedAt: endedAt && !Number.isNaN(endedAt.getTime()) ? endedAt : null,
+    durationMs: Math.max(0, durationMs),
+    caseNumber,
+    caseTitle,
+    caseLabel: caseNumber
+      ? caseTitle
+        ? `${caseNumber} – ${caseTitle}`
+        : caseNumber
+      : 'Keine Zuordnung',
+    clientName,
+  };
+}
+
+function getNormalizedEntries() {
+  return rawEntries
+    .map((entry) => normalizeEntry(entry))
+    .filter((entry) => entry !== null)
+    .sort((a, b) => {
+      const aDate = a.startedAt ?? a.endedAt ?? new Date(0);
+      const bDate = b.startedAt ?? b.endedAt ?? new Date(0);
+      return bDate - aDate;
+    });
+}
+
+function formatDuration(ms, withSeconds = true) {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600)
+    .toString()
+    .padStart(2, '0');
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+    .toString()
+    .padStart(2, '0');
+
+  if (!withSeconds) {
+    return `${hours}:${minutes} h`;
+  }
+
+  const seconds = Math.floor(totalSeconds % 60)
+    .toString()
+    .padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
+}
+
+function formatDateTime(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return 'Unbekannt';
+  }
+
+  return new Intl.DateTimeFormat('de-DE', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+function getDateRange(period) {
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+  switch (period) {
+    case 'today': {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return { start, end };
+    }
+    case 'week': {
+      const day = now.getDay();
+      const diffToMonday = (day + 6) % 7; // Monday as start
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday);
+      return { start, end };
+    }
+    case 'month': {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { start, end };
+    }
+    case 'last30': {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
+      start.setHours(0, 0, 0, 0);
+      return { start, end };
+    }
+    default:
+      return null;
+  }
+}
+
+function matchesSearch(entry, term) {
+  if (!term) {
+    return true;
+  }
+
+  const haystack = [entry.activity, entry.caseLabel, entry.clientName, entry.notes]
+    .join(' ')
+    .toLowerCase();
+  return haystack.includes(term.toLowerCase());
+}
+
+function matchesClient(entry, client) {
+  if (!client) {
+    return true;
+  }
+
+  return entry.clientName === client;
+}
+
+function matchesPeriod(entry, period) {
+  const range = getDateRange(period);
+  if (!range) {
+    return true;
+  }
+
+  const relevantDate = entry.startedAt ?? entry.endedAt;
+  if (!(relevantDate instanceof Date) || Number.isNaN(relevantDate.getTime())) {
+    return false;
+  }
+
+  return relevantDate >= range.start && relevantDate < range.end;
+}
+
+function applyFilters(entries) {
+  const term = searchInput?.value.trim() ?? '';
+  const client = clientSelect?.value ?? '';
+  const period = periodSelect?.value ?? 'all';
+
+  return entries.filter((entry) =>
+    matchesSearch(entry, term) && matchesClient(entry, client) && matchesPeriod(entry, period)
+  );
+}
+
+function renderTable(entries) {
+  if (!tableBody || !emptyState) {
+    return;
+  }
+
+  tableBody.innerHTML = '';
+
+  if (entries.length === 0) {
+    emptyState.hidden = false;
+    return;
+  }
+
+  emptyState.hidden = true;
+
+  const fragment = document.createDocumentFragment();
+
+  entries.forEach((entry) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>
+        <span class="performance-table__primary">${entry.activity}</span>
+        <span class="performance-table__secondary">${entry.caseLabel}</span>
+      </td>
+      <td>
+        <span class="performance-table__primary">${entry.clientName}</span>
+      </td>
+      <td>${entry.caseNumber || '–'}</td>
+      <td>${formatDateTime(entry.startedAt)}</td>
+      <td>${formatDateTime(entry.endedAt)}</td>
+      <td>${formatDuration(entry.durationMs)}</td>
+      <td>${entry.notes || '–'}</td>
+    `;
+    fragment.appendChild(row);
+  });
+
+  tableBody.appendChild(fragment);
+}
+
+function renderSummary(entries) {
+  if (!entryCountEl || !totalDurationEl || !averageDurationEl) {
+    return;
+  }
+
+  const totalEntries = entries.length;
+  const totalDurationMs = entries.reduce((acc, entry) => acc + entry.durationMs, 0);
+  const averageDurationMs = totalEntries > 0 ? totalDurationMs / totalEntries : 0;
+
+  entryCountEl.textContent = totalEntries.toString();
+  totalDurationEl.textContent = formatDuration(totalDurationMs, false);
+  averageDurationEl.textContent = formatDuration(averageDurationMs, false);
+}
+
+function renderBreakdown(entries) {
+  if (!breakdownList || !breakdownSummary) {
+    return;
+  }
+
+  breakdownList.innerHTML = '';
+
+  if (entries.length === 0) {
+    breakdownSummary.textContent = 'Keine Daten vorhanden.';
+    return;
+  }
+
+  const totalsByClient = new Map();
+  let totalDuration = 0;
+
+  entries.forEach((entry) => {
+    const current = totalsByClient.get(entry.clientName) ?? { duration: 0, count: 0 };
+    current.duration += entry.durationMs;
+    current.count += 1;
+    totalsByClient.set(entry.clientName, current);
+    totalDuration += entry.durationMs;
+  });
+
+  breakdownSummary.textContent = `${totalsByClient.size} Mandant:innen, gesamt ${formatDuration(
+    totalDuration,
+    false
+  )}.`;
+
+  const fragment = document.createDocumentFragment();
+
+  Array.from(totalsByClient.entries())
+    .sort((a, b) => b[1].duration - a[1].duration)
+    .forEach(([clientName, info]) => {
+      const percentage = totalDuration > 0 ? Math.round((info.duration / totalDuration) * 100) : 0;
+      const item = document.createElement('li');
+      item.className = 'performance-breakdown__item';
+      item.innerHTML = `
+        <h4>${clientName}</h4>
+        <p class="performance-breakdown__metric">${formatDuration(info.duration, false)}</p>
+        <p class="performance-breakdown__meta">${info.count} Eintrag(e) · ${percentage}% Anteil</p>
+      `;
+      fragment.appendChild(item);
+    });
+
+  breakdownList.appendChild(fragment);
+}
+
+function populateClientFilter(entries) {
+  if (!clientSelect) {
+    return;
+  }
+
+  const clients = Array.from(
+    new Set(entries.filter((entry) => entry.clientName).map((entry) => entry.clientName))
+  ).sort((a, b) => a.localeCompare(b, 'de'));
+
+  const currentValue = clientSelect.value;
+  clientSelect.innerHTML = '<option value="">Alle Mandanten</option>';
+
+  clients.forEach((client) => {
+    const option = document.createElement('option');
+    option.value = client;
+    option.textContent = client;
+    clientSelect.appendChild(option);
+  });
+
+  if (clients.includes(currentValue)) {
+    clientSelect.value = currentValue;
+  }
+}
+
+function render() {
+  const normalized = getNormalizedEntries();
+  populateClientFilter(normalized);
+  const filtered = applyFilters(normalized);
+  renderSummary(filtered);
+  renderBreakdown(filtered);
+  renderTable(filtered);
+}
+
+function init() {
+  if (
+    !searchInput ||
+    !clientSelect ||
+    !periodSelect ||
+    !tableBody ||
+    !emptyState ||
+    !entryCountEl ||
+    !totalDurationEl ||
+    !averageDurationEl ||
+    !breakdownList ||
+    !breakdownSummary
+  ) {
+    return;
+  }
+
+  caseMetadata = parseCaseData();
+  loadEntries();
+  render();
+
+  searchInput.addEventListener('input', () => {
+    render();
+  });
+
+  clientSelect.addEventListener('change', () => {
+    render();
+  });
+
+  periodSelect.addEventListener('change', () => {
+    render();
+  });
+
+  window.addEventListener('storage', (event) => {
+    if (event.key && event.key !== STORAGE_KEY) {
+      return;
+    }
+    loadEntries();
+    render();
+  });
+}
+
+init();

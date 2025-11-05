@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Leistungsübersicht</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Leistungsübersicht</h1>
+      <p class="app-subtitle">
+        Analysieren Sie erfasste Tätigkeiten, filtern Sie nach Mandanten und behalten Sie Summen im Blick.
+      </p>
+      <div class="welcome-actions">
+        <a class="btn btn-secondary" href="index.html">Zur Übersicht</a>
+        <a class="btn btn-secondary" href="time-tracking.html">Zur Zeiterfassung</a>
+      </div>
+    </header>
+
+    <main class="app-main performance-overview-main" aria-live="polite">
+      <section class="performance-overview" aria-labelledby="performance-overview-title">
+        <header class="performance-overview__header">
+          <div>
+            <h2 id="performance-overview-title">Gefilterte Leistungsdaten</h2>
+            <p class="performance-overview__description">
+              Die Liste basiert auf den Zeitbucheinträgen der Zeiterfassung. Nutzen Sie die Filter, um sich auf Mandanten, Zeiträume
+              oder Tätigkeiten zu konzentrieren.
+            </p>
+          </div>
+          <dl class="performance-summary" aria-label="Zusammenfassung der gefilterten Leistungen">
+            <div class="performance-summary__item">
+              <dt>Einträge</dt>
+              <dd id="overview-entry-count">0</dd>
+            </div>
+            <div class="performance-summary__item">
+              <dt>Gesamtzeit</dt>
+              <dd id="overview-total-duration">00:00 h</dd>
+            </div>
+            <div class="performance-summary__item">
+              <dt>Ø Dauer</dt>
+              <dd id="overview-average-duration">00:00 h</dd>
+            </div>
+          </dl>
+        </header>
+
+        <form class="performance-filters" aria-label="Leistungsdaten filtern" novalidate>
+          <div class="performance-filter">
+            <label class="performance-filter__label" for="performance-search">Suche</label>
+            <input
+              type="search"
+              id="performance-search"
+              name="search"
+              placeholder="Nach Tätigkeit, Akte oder Notiz suchen"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <div class="performance-filter">
+            <label class="performance-filter__label" for="performance-client-filter">Mandant</label>
+            <select id="performance-client-filter" name="client">
+              <option value="">Alle Mandanten</option>
+            </select>
+          </div>
+          <div class="performance-filter">
+            <label class="performance-filter__label" for="performance-period-filter">Zeitraum</label>
+            <select id="performance-period-filter" name="period">
+              <option value="all">Alle Einträge</option>
+              <option value="today">Heute</option>
+              <option value="week">Diese Woche</option>
+              <option value="month">Diesen Monat</option>
+              <option value="last30">Letzte 30 Tage</option>
+            </select>
+          </div>
+        </form>
+
+        <section class="performance-breakdown" aria-labelledby="performance-breakdown-title">
+          <div class="performance-breakdown__header">
+            <h3 id="performance-breakdown-title">Summen nach Mandant</h3>
+            <p id="performance-breakdown-summary" class="performance-breakdown__summary">
+              Keine Daten vorhanden.
+            </p>
+          </div>
+          <ul id="performance-breakdown-list" class="performance-breakdown__list" role="list"></ul>
+        </section>
+
+        <div class="table-wrapper" role="region" aria-live="polite" aria-labelledby="performance-overview-title">
+          <table class="performance-table">
+            <thead>
+              <tr>
+                <th scope="col">Tätigkeit</th>
+                <th scope="col">Mandant</th>
+                <th scope="col">Akte</th>
+                <th scope="col">Start</th>
+                <th scope="col">Ende</th>
+                <th scope="col">Dauer</th>
+                <th scope="col">Notiz</th>
+              </tr>
+            </thead>
+            <tbody id="performance-overview-table-body"></tbody>
+          </table>
+        </div>
+        <p id="performance-overview-empty-state" class="performance-empty-state" hidden>
+          Es sind keine Leistungen für die aktuelle Filterauswahl vorhanden.
+        </p>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details">
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="application/json" id="performance-case-data">
+      [
+        {
+          "caseNumber": "V-2024-001",
+          "title": "Vertragsprüfung Müller GmbH",
+          "client": "Müller GmbH"
+        },
+        {
+          "caseNumber": "A-2024-017",
+          "title": "Arbeitsrechtliche Beratung Schmidt",
+          "client": "Eva Schmidt"
+        },
+        {
+          "caseNumber": "I-2024-004",
+          "title": "Investitionsprüfung GreenTech",
+          "client": "GreenTech Holding"
+        },
+        {
+          "caseNumber": "M-2023-089",
+          "title": "Mietrechtliche Streitigkeit Weber",
+          "client": "Jonas Weber"
+        },
+        {
+          "caseNumber": "S-2024-032",
+          "title": "Steuerprüfung Contoso AG",
+          "client": "Contoso AG"
+        },
+        {
+          "caseNumber": "F-2024-011",
+          "title": "Familienrechtliche Mediation Krause",
+          "client": "Familie Krause"
+        }
+      ]
+    </script>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/performance-overview.js" type="module"></script>
+  </body>
+</html>
