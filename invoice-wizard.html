@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Rechnungs-Wizard</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Rechnung erstellen</h1>
+      <p class="app-subtitle">
+        Führen Sie erfasste Leistungen zusammen, prüfen Sie die Angaben und exportieren Sie eine Vorschau als PDF-Mock.
+      </p>
+    </header>
+
+    <main class="app-main" aria-live="polite">
+      <nav class="wizard-breadcrumb" aria-label="Navigation">
+        <a class="wizard-breadcrumb__link" href="index.html">&larr; Zur Übersicht</a>
+      </nav>
+
+      <section class="app-card wizard-card" aria-labelledby="invoice-wizard-title">
+        <header class="wizard-card__header">
+          <h2 id="invoice-wizard-title">Rechnungs-Wizard</h2>
+          <p id="invoice-wizard-description" class="wizard-card__description">
+            Nutzen Sie die vorhandenen Leistungsdaten, um eine Rechnung mit wenigen Schritten aufzubauen. Alle Eingaben lassen sich vor dem Export anpassen.
+          </p>
+        </header>
+
+        <ol class="wizard-progress" role="list" aria-label="Fortschritt Rechnungs-Wizard">
+          <li class="wizard-progress__step" data-progress-step="1" role="listitem">
+            <span class="wizard-progress__label">Mandant & Zeitraum</span>
+          </li>
+          <li class="wizard-progress__step" data-progress-step="2" role="listitem">
+            <span class="wizard-progress__label">Leistungen prüfen</span>
+          </li>
+          <li class="wizard-progress__step" data-progress-step="3" role="listitem">
+            <span class="wizard-progress__label">Rechnungsdetails</span>
+          </li>
+          <li class="wizard-progress__step" data-progress-step="4" role="listitem">
+            <span class="wizard-progress__label">Vorschau & Export</span>
+          </li>
+        </ol>
+
+        <form id="invoice-form" class="wizard-form" novalidate aria-describedby="invoice-wizard-description">
+          <section class="wizard-step" data-step="1" aria-label="Mandant und Zeitraum wählen">
+            <fieldset class="wizard-fieldset">
+              <legend class="wizard-step__title" tabindex="-1">Schritt 1: Mandant und Zeitraum wählen</legend>
+              <p class="wizard-step__hint">
+                Wählen Sie den Mandanten sowie den Zeitraum, für den Leistungen abgerechnet werden sollen. Die Auswahl bestimmt, welche Tätigkeiten im nächsten Schritt vorgeschlagen werden.
+              </p>
+
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="invoice-client">Mandant *</label>
+                  <select id="invoice-client" name="client" required aria-describedby="invoice-client-error">
+                    <option value="" disabled selected>Mandant auswählen</option>
+                  </select>
+                  <p id="invoice-client-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+
+                <div class="form-field">
+                  <label for="invoice-period">Leistungszeitraum</label>
+                  <select id="invoice-period" name="period" aria-describedby="invoice-period-hint">
+                    <option value="all" selected>Alle erfassten Leistungen</option>
+                    <option value="30">Letzte 30 Tage</option>
+                    <option value="90">Letzte 90 Tage</option>
+                    <option value="365">Letzte 365 Tage</option>
+                  </select>
+                  <p id="invoice-period-hint" class="form-field__hint">
+                    Der Zeitraum filtert Leistungen anhand des Enddatums.
+                  </p>
+                </div>
+
+                <div class="form-field">
+                  <label for="invoice-case-filter">Akte (optional)</label>
+                  <select id="invoice-case-filter" name="case" aria-describedby="invoice-case-hint">
+                    <option value="">Alle Akten</option>
+                  </select>
+                  <p id="invoice-case-hint" class="form-field__hint">
+                    Eingrenzung auf eine konkrete Akte, sofern mehrere vorhanden sind.
+                  </p>
+                </div>
+              </div>
+
+              <div id="invoice-filter-summary" class="invoice-summary" role="status" aria-live="polite"></div>
+              <p id="invoice-step1-error" class="field-error" role="status" aria-live="polite"></p>
+            </fieldset>
+          </section>
+
+          <section class="wizard-step" data-step="2" aria-label="Leistungen prüfen" hidden>
+            <fieldset class="wizard-fieldset">
+              <legend class="wizard-step__title" tabindex="-1">Schritt 2: Leistungen prüfen</legend>
+              <p class="wizard-step__hint">
+                Prüfen Sie die vorausgewählten Leistungen. Sie können einzelne Positionen abwählen oder Stundensätze anpassen.
+              </p>
+
+              <div class="invoice-table-wrapper" role="region" aria-labelledby="invoice-table-heading">
+                <h3 id="invoice-table-heading" class="visually-hidden">Leistungspositionen</h3>
+                <table class="invoice-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Auswahl</th>
+                      <th scope="col">Leistung</th>
+                      <th scope="col">Dauer</th>
+                      <th scope="col">Stundensatz (€)</th>
+                      <th scope="col">Betrag (€)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="invoice-line-items"></tbody>
+                </table>
+              </div>
+
+              <p id="invoice-items-empty" class="invoice-empty-state" hidden>
+                Für die aktuelle Auswahl stehen keine Leistungen zur Verfügung. Bitte passen Sie Mandant, Zeitraum oder Akte an.
+              </p>
+
+              <p id="invoice-items-error" class="field-error" role="status" aria-live="polite"></p>
+
+              <dl class="invoice-totals" aria-label="Summenübersicht">
+                <div class="invoice-totals__item">
+                  <dt>Ausgewählte Stunden</dt>
+                  <dd id="invoice-total-hours">0,00 h</dd>
+                </div>
+                <div class="invoice-totals__item">
+                  <dt>Zwischensumme (netto)</dt>
+                  <dd id="invoice-total-net">0,00 €</dd>
+                </div>
+                <div class="invoice-totals__item">
+                  <dt>Umsatzsteuer</dt>
+                  <dd id="invoice-total-tax">0,00 €</dd>
+                </div>
+                <div class="invoice-totals__item invoice-totals__item--highlight">
+                  <dt>Gesamtsumme (brutto)</dt>
+                  <dd id="invoice-total-gross">0,00 €</dd>
+                </div>
+              </dl>
+            </fieldset>
+          </section>
+
+          <section class="wizard-step" data-step="3" aria-label="Rechnungsdetails" hidden>
+            <fieldset class="wizard-fieldset">
+              <legend class="wizard-step__title" tabindex="-1">Schritt 3: Rechnungsdetails</legend>
+              <p class="wizard-step__hint">
+                Ergänzen Sie die Pflichtangaben zur Rechnung. Die Informationen fließen in die Vorschau ein.
+              </p>
+
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="invoice-number">Rechnungsnummer *</label>
+                  <input
+                    id="invoice-number"
+                    name="invoiceNumber"
+                    type="text"
+                    inputmode="text"
+                    autocomplete="off"
+                    required
+                    maxlength="32"
+                    aria-describedby="invoice-number-error"
+                  />
+                  <p id="invoice-number-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+
+                <div class="form-field">
+                  <label for="invoice-date">Rechnungsdatum *</label>
+                  <input
+                    id="invoice-date"
+                    name="invoiceDate"
+                    type="date"
+                    required
+                    aria-describedby="invoice-date-error"
+                  />
+                  <p id="invoice-date-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+
+                <div class="form-field">
+                  <label for="invoice-due-date">Fällig bis *</label>
+                  <input
+                    id="invoice-due-date"
+                    name="dueDate"
+                    type="date"
+                    required
+                    aria-describedby="invoice-due-date-error"
+                  />
+                  <p id="invoice-due-date-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+
+                <div class="form-field">
+                  <label for="invoice-tax-rate">Umsatzsteuer *</label>
+                  <select id="invoice-tax-rate" name="taxRate" required aria-describedby="invoice-tax-rate-error">
+                    <option value="19" selected>19 %</option>
+                    <option value="7">7 %</option>
+                    <option value="0">0 %</option>
+                  </select>
+                  <p id="invoice-tax-rate-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="invoice-reference">Referenz / Aktenzeichen</label>
+                  <input id="invoice-reference" name="reference" type="text" maxlength="80" autocomplete="off" />
+                </div>
+
+                <div class="form-field">
+                  <label for="invoice-payment-terms">Zahlungshinweis</label>
+                  <textarea
+                    id="invoice-payment-terms"
+                    name="paymentTerms"
+                    rows="3"
+                    maxlength="240"
+                    aria-describedby="invoice-payment-terms-hint"
+                  ></textarea>
+                  <p id="invoice-payment-terms-hint" class="form-field__hint">
+                    Beispiel: „Zahlbar innerhalb von 14 Tagen ohne Abzug auf das bekannte Kanzleikonto.“
+                  </p>
+                </div>
+
+                <div class="form-field form-field--wide">
+                  <label for="invoice-notes">Anmerkungen (optional)</label>
+                  <textarea id="invoice-notes" name="notes" rows="3" maxlength="360"></textarea>
+                </div>
+              </div>
+            </fieldset>
+          </section>
+
+          <section class="wizard-step" data-step="4" aria-label="Vorschau und Export" hidden>
+            <fieldset class="wizard-fieldset">
+              <legend class="wizard-step__title" tabindex="-1">Schritt 4: Vorschau &amp; Export</legend>
+              <p class="wizard-step__hint">
+                Prüfen Sie die Zusammenfassung. Über den PDF-Export erhalten Sie eine Dummy-Datei als Platzhalter.
+              </p>
+
+              <article class="invoice-preview" aria-labelledby="invoice-preview-heading">
+                <header>
+                  <h3 id="invoice-preview-heading">Rechnungsvorschau</h3>
+                  <p id="invoice-preview-meta" class="invoice-preview__meta"></p>
+                </header>
+
+                <dl class="summary-grid" aria-label="Rechnungsdetails">
+                  <div>
+                    <dt>Mandant</dt>
+                    <dd id="invoice-preview-client">–</dd>
+                  </div>
+                  <div>
+                    <dt>Akte</dt>
+                    <dd id="invoice-preview-case">–</dd>
+                  </div>
+                  <div>
+                    <dt>Zeitraum</dt>
+                    <dd id="invoice-preview-period">–</dd>
+                  </div>
+                  <div>
+                    <dt>Fällig bis</dt>
+                    <dd id="invoice-preview-due">–</dd>
+                  </div>
+                </dl>
+
+                <div class="invoice-table-wrapper">
+                  <table class="invoice-table invoice-table--preview">
+                    <thead>
+                      <tr>
+                        <th scope="col">Leistung</th>
+                        <th scope="col">Dauer</th>
+                        <th scope="col">Satz</th>
+                        <th scope="col">Betrag</th>
+                      </tr>
+                    </thead>
+                    <tbody id="invoice-preview-items"></tbody>
+                  </table>
+                </div>
+
+                <dl class="invoice-totals invoice-totals--preview" aria-label="Rechnungssummen">
+                  <div class="invoice-totals__item">
+                    <dt>Zwischensumme</dt>
+                    <dd id="invoice-preview-net">0,00 €</dd>
+                  </div>
+                  <div class="invoice-totals__item">
+                    <dt>Umsatzsteuer</dt>
+                    <dd id="invoice-preview-tax">0,00 €</dd>
+                  </div>
+                  <div class="invoice-totals__item invoice-totals__item--highlight">
+                    <dt>Gesamtbetrag</dt>
+                    <dd id="invoice-preview-gross">0,00 €</dd>
+                  </div>
+                </dl>
+
+                <p id="invoice-preview-notes" class="invoice-preview__notes"></p>
+              </article>
+
+              <div class="invoice-preview__actions">
+                <button type="button" class="btn btn-secondary" id="invoice-export">
+                  PDF-Export (Mock)
+                </button>
+              </div>
+            </fieldset>
+          </section>
+
+          <div class="wizard-navigation" role="group" aria-label="Wizard-Steuerung">
+            <button type="button" class="btn btn-secondary" id="invoice-prev" data-action="prev" disabled>
+              Zurück
+            </button>
+            <button type="button" class="btn btn-primary" id="invoice-next" data-action="next">
+              Weiter
+            </button>
+            <button type="submit" class="btn btn-success" id="invoice-submit" data-action="submit" hidden>
+              Rechnung abschließen
+            </button>
+          </div>
+        </form>
+
+        <div id="invoice-success" class="wizard-success" role="alert" hidden tabindex="-1">
+          <h3>Rechnungsvorschau erstellt</h3>
+          <p>
+            Die Rechnung wurde vorbereitet. Nutzen Sie den PDF-Export, um die Dummy-Datei herunterzuladen oder passen Sie die Angaben erneut an.
+          </p>
+          <button type="button" class="btn" id="invoice-reset">Neue Rechnung erstellen</button>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details" hidden>
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="application/json" id="invoice-entry-data">
+      [
+        {
+          "id": "demo-entry-1",
+          "activity": "Akteneinsicht und Mandantenbrief",
+          "caseNumber": "V-2024-001",
+          "caseTitle": "Vertragsprüfung Müller GmbH",
+          "client": "Müller GmbH",
+          "durationMs": 7200000,
+          "endedAt": "2025-10-15T14:45:00.000Z",
+          "notes": "Zusammenfassung der Vertragsklauseln",
+          "rate": 195
+        },
+        {
+          "id": "demo-entry-2",
+          "activity": "Telefonkonferenz mit Gegenpartei",
+          "caseNumber": "V-2024-001",
+          "caseTitle": "Vertragsprüfung Müller GmbH",
+          "client": "Müller GmbH",
+          "durationMs": 3600000,
+          "endedAt": "2025-10-22T09:30:00.000Z",
+          "notes": "Abstimmung zu Anpassungen",
+          "rate": 205
+        },
+        {
+          "id": "demo-entry-3",
+          "activity": "Schriftsatz Entwurf",
+          "caseNumber": "A-2024-017",
+          "caseTitle": "Arbeitsrechtliche Beratung Schmidt",
+          "client": "Eva Schmidt",
+          "durationMs": 5400000,
+          "endedAt": "2025-10-28T16:10:00.000Z",
+          "notes": "Kündigungsschutzschrift",
+          "rate": 180
+        },
+        {
+          "id": "demo-entry-4",
+          "activity": "Besprechung im Mandat",
+          "caseNumber": "A-2024-017",
+          "caseTitle": "Arbeitsrechtliche Beratung Schmidt",
+          "client": "Eva Schmidt",
+          "durationMs": 4500000,
+          "endedAt": "2025-10-30T11:00:00.000Z",
+          "notes": "Vorbereitung Gütetermin",
+          "rate": 180
+        }
+      ]
+    </script>
+
+    <script type="application/json" id="invoice-case-directory">
+      [
+        { "caseNumber": "V-2024-001", "title": "Vertragsprüfung Müller GmbH", "client": "Müller GmbH", "defaultRate": 195 },
+        { "caseNumber": "A-2024-017", "title": "Arbeitsrechtliche Beratung Schmidt", "client": "Eva Schmidt", "defaultRate": 180 },
+        { "caseNumber": "I-2024-004", "title": "Investitionsprüfung GreenTech", "client": "GreenTech Holding", "defaultRate": 210 },
+        { "caseNumber": "S-2024-032", "title": "Steuerprüfung Contoso AG", "client": "Contoso AG", "defaultRate": 220 }
+      ]
+    </script>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/invoice-wizard.js" type="module"></script>
+  </body>
+</html>
