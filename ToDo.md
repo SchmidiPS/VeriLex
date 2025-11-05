@@ -49,8 +49,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 11. **Rechnungs-Wizard** – Baue einen Wizard zur Rechnungserstellung auf Basis erfasster Leistungen. Zeige Vorschau und PDF-Export (Dummy).
     Status: ✅ erledigt – 2025-11-05
 
-12. **Offene-Posten-Übersicht (Mock)** – Zeige Rechnungen mit Status „bezahlt“, „überfällig“, „offen“. Keine echte Datenbank nötig.  
-    Status: ⬜
+12. **Offene-Posten-Übersicht (Mock)** – Zeige Rechnungen mit Status „bezahlt“, „überfällig“, „offen“. Keine echte Datenbank nötig.
+    Status: ✅ erledigt – 2025-11-05
 
 13. **E-Mail-Integration (Mock)** – Erstelle eine Demo-Inbox mit Nachrichtenliste und Detailansicht. Alle E-Mails sind Dummy-Einträge aus JSON.  
     Status: ⬜

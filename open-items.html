@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Offene-Posten-Übersicht</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Offene-Posten-Übersicht</h1>
+      <p class="app-subtitle">
+        Behalten Sie unbezahlte Rechnungen, offene Beträge und bereits beglichene Vorgänge transparent im Blick.
+      </p>
+      <div class="welcome-actions">
+        <a class="btn btn-secondary" href="index.html">Zur Übersicht</a>
+        <a class="btn btn-secondary" href="performance-overview.html">Leistungsübersicht</a>
+        <a class="btn btn-secondary" href="invoice-wizard.html">Rechnungs-Wizard</a>
+      </div>
+    </header>
+
+    <main class="app-main receivables-main" aria-live="polite">
+      <section class="receivables-board" aria-labelledby="receivables-title">
+        <header class="receivables-board__header">
+          <div>
+            <h2 id="receivables-title">Statusüberblick Ihrer Forderungen</h2>
+            <p class="receivables-board__description">
+              Die nachfolgende Liste basiert auf Demo-Daten und zeigt, welche Rechnungen offen, überfällig oder bereits bezahlt
+              sind. Nutzen Sie die Filter, um sich auf relevante Fälle zu konzentrieren.
+            </p>
+          </div>
+          <dl class="receivables-summary" aria-label="Summen nach Status">
+            <div class="receivables-summary__item receivables-summary__item--open">
+              <dt>Offen</dt>
+              <dd>
+                <span id="receivables-summary-open-count" class="receivables-summary__count">0</span>
+                <span class="receivables-summary__separator" aria-hidden="true">·</span>
+                <span id="receivables-summary-open-amount" class="receivables-summary__amount">0,00&nbsp;€</span>
+              </dd>
+            </div>
+            <div class="receivables-summary__item receivables-summary__item--overdue">
+              <dt>Überfällig</dt>
+              <dd>
+                <span id="receivables-summary-overdue-count" class="receivables-summary__count">0</span>
+                <span class="receivables-summary__separator" aria-hidden="true">·</span>
+                <span id="receivables-summary-overdue-amount" class="receivables-summary__amount">0,00&nbsp;€</span>
+              </dd>
+            </div>
+            <div class="receivables-summary__item receivables-summary__item--paid">
+              <dt>Bezahlt</dt>
+              <dd>
+                <span id="receivables-summary-paid-count" class="receivables-summary__count">0</span>
+                <span class="receivables-summary__separator" aria-hidden="true">·</span>
+                <span id="receivables-summary-paid-amount" class="receivables-summary__amount">0,00&nbsp;€</span>
+              </dd>
+            </div>
+          </dl>
+        </header>
+
+        <p id="receivables-outstanding-total" class="receivables-highlight" role="status">
+          Summe offener und überfälliger Posten: 0,00&nbsp;€
+        </p>
+
+        <form class="receivables-filters" aria-label="Rechnungen filtern" novalidate>
+          <div class="receivables-filter">
+            <label class="receivables-filter__label" for="receivables-search">Schnellsuche</label>
+            <input
+              type="search"
+              id="receivables-search"
+              name="search"
+              placeholder="Nach Rechnungsnummer, Mandant oder Akte suchen"
+              autocomplete="off"
+              spellcheck="false"
+              aria-describedby="receivables-table-summary"
+            />
+          </div>
+          <div class="receivables-filter">
+            <label class="receivables-filter__label" for="receivables-status-filter">Status</label>
+            <select id="receivables-status-filter" name="status">
+              <option value="all">Alle Status</option>
+              <option value="open">Offen</option>
+              <option value="overdue">Überfällig</option>
+              <option value="paid">Bezahlt</option>
+            </select>
+          </div>
+          <div class="receivables-filter receivables-filter--checkbox">
+            <input type="checkbox" id="receivables-outstanding-only" name="outstandingOnly" />
+            <label for="receivables-outstanding-only">Nur offene &amp; überfällige anzeigen</label>
+          </div>
+        </form>
+
+        <p id="receivables-table-summary" class="receivables-table-summary" role="status">
+          0 Rechnungen gefunden.
+        </p>
+
+        <div class="table-wrapper" role="region" aria-labelledby="receivables-title" aria-live="polite">
+          <table class="receivables-table">
+            <thead>
+              <tr>
+                <th scope="col">Rechnung</th>
+                <th scope="col">Mandant &amp; Akte</th>
+                <th scope="col">Fälligkeit</th>
+                <th scope="col">Betrag</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody id="receivables-table-body"></tbody>
+          </table>
+        </div>
+        <p id="receivables-empty-state" class="receivables-empty-state" hidden>
+          Für die aktuelle Filterauswahl sind keine Rechnungen vorhanden.
+        </p>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details">
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="application/json" id="receivables-data">
+      [
+        {
+          "invoiceNumber": "RE-2025-021",
+          "caseNumber": "V-2024-001",
+          "matter": "Vertragsprüfung Müller GmbH",
+          "client": "Müller GmbH",
+          "issueDate": "2025-09-28",
+          "dueDate": "2025-10-28",
+          "amount": 2980.0,
+          "status": "overdue",
+          "note": "Mahnung vom 30.10. versendet"
+        },
+        {
+          "invoiceNumber": "RE-2025-034",
+          "caseNumber": "A-2024-017",
+          "matter": "Arbeitsrechtliche Beratung Schmidt",
+          "client": "Eva Schmidt",
+          "issueDate": "2025-10-12",
+          "dueDate": "2025-11-11",
+          "amount": 1650.5,
+          "status": "open",
+          "note": "Rückfrage des Mandanten offen"
+        },
+        {
+          "invoiceNumber": "RE-2025-037",
+          "caseNumber": "I-2024-004",
+          "matter": "Investitionsprüfung GreenTech",
+          "client": "GreenTech Holding",
+          "issueDate": "2025-09-20",
+          "dueDate": "2025-10-05",
+          "amount": 7420.0,
+          "status": "overdue",
+          "note": "Telefonische Erinnerung geplant am 06.11."
+        },
+        {
+          "invoiceNumber": "RE-2025-040",
+          "caseNumber": "M-2023-089",
+          "matter": "Mietrechtliche Streitigkeit Weber",
+          "client": "Jonas Weber",
+          "issueDate": "2025-10-25",
+          "dueDate": "2025-11-24",
+          "amount": 890.0,
+          "status": "open"
+        },
+        {
+          "invoiceNumber": "RE-2025-042",
+          "caseNumber": "S-2024-032",
+          "matter": "Steuerprüfung Contoso AG",
+          "client": "Contoso AG",
+          "issueDate": "2025-09-15",
+          "dueDate": "2025-10-15",
+          "amount": 5120.75,
+          "status": "paid",
+          "paidDate": "2025-10-22",
+          "note": "Ausgleich durch Sammelüberweisung"
+        },
+        {
+          "invoiceNumber": "RE-2025-045",
+          "caseNumber": "F-2024-011",
+          "matter": "Familienrechtliche Mediation Krause",
+          "client": "Familie Krause",
+          "issueDate": "2025-10-30",
+          "dueDate": "2025-11-29",
+          "amount": 1320.0,
+          "status": "open",
+          "note": "Ratenzahlung angefragt"
+        },
+        {
+          "invoiceNumber": "RE-2025-046",
+          "caseNumber": "N-2024-014",
+          "matter": "Nachlassverwaltung Petersen",
+          "client": "Erbengemeinschaft Petersen",
+          "issueDate": "2025-08-30",
+          "dueDate": "2025-09-29",
+          "amount": 2765.0,
+          "status": "overdue",
+          "note": "Weiterleitung an Buchhaltung zur Eskalation"
+        },
+        {
+          "invoiceNumber": "RE-2025-048",
+          "caseNumber": "K-2024-055",
+          "matter": "Kartellrechtliche Prüfung Nordwind",
+          "client": "Nordwind AG",
+          "issueDate": "2025-10-18",
+          "dueDate": "2025-11-17",
+          "amount": 3840.0,
+          "status": "open"
+        },
+        {
+          "invoiceNumber": "RE-2025-051",
+          "caseNumber": "D-2024-066",
+          "matter": "Datenschutz-Audit FutureLabs",
+          "client": "FutureLabs GmbH",
+          "issueDate": "2025-09-05",
+          "dueDate": "2025-10-05",
+          "amount": 4580.0,
+          "status": "paid",
+          "paidDate": "2025-10-03"
+        },
+        {
+          "invoiceNumber": "RE-2025-053",
+          "caseNumber": "B-2024-072",
+          "matter": "Baurechtliche Begleitung Skyline",
+          "client": "Skyline Projektentwicklung",
+          "issueDate": "2025-10-05",
+          "dueDate": "2025-11-04",
+          "amount": 6230.0,
+          "status": "overdue",
+          "note": "Letzte Erinnerung am 01.11. gesendet"
+        }
+      ]
+    </script>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/open-items.js" type="module"></script>
+  </body>
+</html>
