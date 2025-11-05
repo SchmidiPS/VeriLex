@@ -1798,3 +1798,279 @@ body {
     font-size: 0.9rem;
   }
 }
+
+.time-tracking-layout {
+  width: min(1100px, 100%);
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-self: stretch;
+  margin: 0 auto;
+}
+
+.time-tracking-layout .app-card {
+  width: 100%;
+}
+
+.time-tracking-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.time-tracking-card__description {
+  margin: 0;
+  color: #4b5563;
+  max-width: 60ch;
+}
+
+.time-tracking-card__status {
+  min-height: 1.5rem;
+  font-weight: 600;
+  color: #1f3c88;
+}
+
+.time-tracking-card__status--success {
+  color: #047857;
+}
+
+.time-tracking-card__status--warning {
+  color: #b45309;
+}
+
+.time-tracking-card__status--error {
+  color: #b91c1c;
+}
+
+.time-tracking-form {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-field label {
+  font-weight: 600;
+  color: #1f3c88;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  border: 1px solid rgba(47, 116, 192, 0.25);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.form-field input:focus-visible,
+.form-field select:focus-visible,
+.form-field textarea:focus-visible {
+  outline: 3px solid rgba(47, 116, 192, 0.35);
+  outline-offset: 2px;
+  border-color: #2f74c0;
+  box-shadow: 0 0 0 4px rgba(47, 116, 192, 0.15);
+}
+
+.form-field textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.stopwatch {
+  margin-top: 2rem;
+  background: linear-gradient(180deg, rgba(47, 116, 192, 0.08), rgba(47, 116, 192, 0.02));
+  border: 1px solid rgba(47, 116, 192, 0.2);
+  border-radius: 18px;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+}
+
+.stopwatch__display {
+  font-size: clamp(2.5rem, 6vw, 3.6rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #1f3c88;
+}
+
+.stopwatch__meta {
+  margin: 0;
+  color: #4b5563;
+}
+
+.stopwatch__controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.performance-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.performance-card__description {
+  margin: 0;
+  color: #4b5563;
+  max-width: 60ch;
+}
+
+.performance-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin: 0;
+}
+
+.performance-summary__item {
+  background: rgba(47, 116, 192, 0.08);
+  border-radius: 14px;
+  padding: 0.75rem 1.25rem;
+  display: grid;
+  gap: 0.35rem;
+  min-width: 140px;
+}
+
+.performance-summary__item dt {
+  margin: 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+}
+
+.performance-summary__item dd {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1f3c88;
+}
+
+.table-wrapper {
+  margin-top: 1.25rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  overflow-x: auto;
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.performance-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+.performance-table thead {
+  background: rgba(47, 116, 192, 0.08);
+}
+
+.performance-table th,
+.performance-table td {
+  text-align: left;
+  padding: 0.75rem 0.95rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  vertical-align: top;
+}
+
+.performance-table th {
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.performance-table__primary {
+  display: block;
+  font-weight: 600;
+  color: #1f3c88;
+}
+
+.performance-table__secondary {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.performance-table__actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.performance-table__action {
+  background: rgba(47, 116, 192, 0.08);
+  border: 1px solid rgba(47, 116, 192, 0.25);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1f3c88;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.performance-table__action:hover,
+.performance-table__action:focus-visible {
+  background: rgba(47, 116, 192, 0.18);
+  color: #163470;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(47, 116, 192, 0.12);
+}
+
+.performance-empty-state {
+  margin: 1.25rem 0 0;
+  padding: 1.25rem;
+  text-align: center;
+  border-radius: 14px;
+  border: 1px dashed rgba(47, 116, 192, 0.25);
+  background: rgba(47, 116, 192, 0.04);
+  color: #4b5563;
+}
+
+@media (max-width: 720px) {
+  .time-tracking-form {
+    grid-template-columns: 1fr;
+  }
+
+  .stopwatch {
+    padding: 1.25rem;
+  }
+
+  .performance-summary {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .performance-summary__item {
+    width: 100%;
+  }
+
+  .performance-table {
+    min-width: 100%;
+  }
+
+  .performance-table__actions {
+    text-align: left;
+  }
+}
