@@ -40,8 +40,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 8. **Vorlagen-Assistent** – Füge ein einfaches Formular hinzu, mit dem Textbausteine oder Vorlagen angezeigt, angepasst und in das Dokument eingefügt werden können.
    Status: ✅ erledigt – 2025-11-04
 
-9. **Zeiterfassung mit Stoppuhr** – Ergänze eine Stoppuhr-Komponente, die die Zeit für eine Tätigkeit misst und als Eintrag in der Leistungsübersicht speichert.  
-   Status: ⬜
+9. **Zeiterfassung mit Stoppuhr** – Ergänze eine Stoppuhr-Komponente, die die Zeit für eine Tätigkeit misst und als Eintrag in der Leistungsübersicht speichert.
+   Status: ✅ erledigt – 2025-11-05
 
 10. **Leistungsübersicht** – Erstelle eine Tabelle aller Leistungen mit Filter- und Summenfunktion (z. B. Stunden nach Mandant).  
     Status: ⬜

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Zeiterfassung</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Zeiterfassung</h1>
+      <p class="app-subtitle">Erfassen Sie Arbeitszeiten und behalten Sie Leistungen im Blick.</p>
+      <div class="welcome-actions">
+        <a class="btn btn-secondary" href="index.html">Zur Übersicht</a>
+      </div>
+    </header>
+
+    <main class="app-main time-tracking-layout" aria-live="polite">
+      <section class="app-card time-tracking-card" aria-labelledby="time-tracking-title">
+        <div class="time-tracking-card__header">
+          <div>
+            <h2 id="time-tracking-title">Stoppuhr für Tätigkeiten</h2>
+            <p class="time-tracking-card__description">
+              Beschreiben Sie die Tätigkeit, wählen Sie optional eine Akte aus und starten Sie die Zeiterfassung.
+              Beim Stoppen wird automatisch ein Eintrag in der Leistungsübersicht erstellt.
+            </p>
+          </div>
+          <div class="time-tracking-card__status" id="time-tracking-status" role="status" aria-live="polite"></div>
+        </div>
+
+        <form class="time-tracking-form" id="time-tracking-form" novalidate>
+          <div class="form-field">
+            <label for="activity-title">Tätigkeitsbeschreibung <span aria-hidden="true">*</span></label>
+            <input
+              type="text"
+              id="activity-title"
+              name="activityTitle"
+              required
+              placeholder="z. B. Telefonat mit Mandant"
+              autocomplete="off"
+            />
+            <p class="form-hint" id="activity-title-hint">Beschreiben Sie die Tätigkeit so konkret wie möglich.</p>
+          </div>
+
+          <div class="form-field">
+            <label for="activity-case">Akte</label>
+            <select id="activity-case" name="activityCase" aria-describedby="activity-case-hint">
+              <option value="">Keine Zuordnung</option>
+            </select>
+            <p class="form-hint" id="activity-case-hint">Optional: Ordnen Sie die Zeit einer Akte zu.</p>
+          </div>
+
+          <div class="form-field">
+            <label for="activity-notes">Notizen</label>
+            <textarea
+              id="activity-notes"
+              name="activityNotes"
+              rows="3"
+              placeholder="Zusätzliche Informationen oder Ergebnisse"
+            ></textarea>
+          </div>
+        </form>
+
+        <div class="stopwatch" role="group" aria-labelledby="time-tracking-title">
+          <div class="stopwatch__display" id="stopwatch-display" aria-live="assertive">00:00:00</div>
+          <p class="stopwatch__meta" id="stopwatch-meta" aria-live="polite">Noch nicht gestartet.</p>
+          <div class="stopwatch__controls">
+            <button type="button" class="btn btn-primary" id="stopwatch-start">Starten</button>
+            <button type="button" class="btn btn-secondary" id="stopwatch-pause" disabled>Pausieren</button>
+            <button type="button" class="btn btn-secondary" id="stopwatch-resume" hidden disabled>Fortsetzen</button>
+            <button type="button" class="btn btn-secondary" id="stopwatch-stop" disabled>Stoppen &amp; speichern</button>
+            <button type="button" class="btn" id="stopwatch-reset" disabled>Zurücksetzen</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="app-card performance-card" aria-labelledby="performance-title">
+        <header class="performance-card__header">
+          <div>
+            <h2 id="performance-title">Leistungsübersicht</h2>
+            <p class="performance-card__description">
+              Alle erfassten Zeitbucheinträge werden hier gesammelt. Nutzen Sie die Summenanzeige, um die Tagesleistung einzuschätzen.
+            </p>
+          </div>
+          <dl class="performance-summary" aria-label="Zusammenfassung der erfassten Zeit">
+            <div class="performance-summary__item">
+              <dt>Einträge</dt>
+              <dd id="performance-entry-count">0</dd>
+            </div>
+            <div class="performance-summary__item">
+              <dt>Gesamtzeit</dt>
+              <dd id="performance-total-duration">00:00 h</dd>
+            </div>
+          </dl>
+        </header>
+
+        <div class="table-wrapper" role="region" aria-live="polite" aria-labelledby="performance-title">
+          <table class="performance-table">
+            <thead>
+              <tr>
+                <th scope="col">Tätigkeit</th>
+                <th scope="col">Akte</th>
+                <th scope="col">Start</th>
+                <th scope="col">Ende</th>
+                <th scope="col">Dauer</th>
+                <th scope="col">Notiz</th>
+                <th scope="col" class="performance-table__actions">Aktionen</th>
+              </tr>
+            </thead>
+            <tbody id="performance-table-body"></tbody>
+          </table>
+        </div>
+        <p id="performance-empty-state" class="performance-empty-state">Noch keine Einträge vorhanden. Starten Sie die Stoppuhr, um die erste Leistung zu erfassen.</p>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details">
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="application/json" id="time-tracking-case-data">
+      [
+        { "caseNumber": "V-2024-001", "title": "Vertragsprüfung Müller GmbH" },
+        { "caseNumber": "A-2024-017", "title": "Arbeitsrechtliche Beratung Schmidt" },
+        { "caseNumber": "I-2024-004", "title": "Investitionsprüfung GreenTech" },
+        { "caseNumber": "M-2023-089", "title": "Mietrechtliche Streitigkeit Weber" },
+        { "caseNumber": "S-2024-032", "title": "Steuerprüfung Contoso AG" }
+      ]
+    </script>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/time-tracking.js" type="module"></script>
+  </body>
+</html>
