@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="de" data-disable-role-selector>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Anmeldung</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>VeriLex Demo-Login</h1>
+      <p class="app-subtitle">
+        Melden Sie sich an, um die verschiedenen Mock-Module der Kanzleioberfläche zu erkunden.
+      </p>
+      <div class="welcome-actions">
+        <a class="btn btn-secondary" href="index.html">Zur Startseite</a>
+        <a class="btn btn-secondary" href="logout.html">Abmelden</a>
+      </div>
+    </header>
+
+    <main class="app-main auth-main" aria-live="polite">
+      <section class="app-card auth-card" aria-labelledby="login-title">
+        <div class="auth-card__header">
+          <div>
+            <h2 id="login-title">Anmeldung ohne echte Prüfung</h2>
+            <p class="auth-card__description">
+              Die Eingaben dienen lediglich der Demo. Wir speichern nur die ausgewählte Rolle und simulieren eine Sitzung,
+              damit die Rollenansichten auf den Folgeseiten nachvollziehbar bleiben.
+            </p>
+          </div>
+          <p id="login-session-info" class="auth-session-info" role="status" aria-live="polite" hidden></p>
+        </div>
+
+        <form id="login-form" class="auth-form" novalidate>
+          <div class="form-field">
+            <label for="login-email">Geschäftliche E-Mail <span aria-hidden="true">*</span></label>
+            <input
+              type="email"
+              id="login-email"
+              name="email"
+              required
+              autocomplete="email"
+              inputmode="email"
+              placeholder="name@kanzlei.de"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="login-password">Passwort (Demo) <span aria-hidden="true">*</span></label>
+            <input
+              type="password"
+              id="login-password"
+              name="password"
+              required
+              minlength="4"
+              autocomplete="current-password"
+              placeholder="••••••"
+            />
+            <p class="form-hint">Es findet keine echte Authentifizierung statt – jeder Wert ist zulässig.</p>
+          </div>
+
+          <div class="form-field">
+            <label for="login-role">Rolle wählen</label>
+            <select id="login-role" name="role" aria-describedby="login-role-hint">
+              <option value="">Rolle auswählen …</option>
+            </select>
+            <p class="form-hint" id="login-role-hint">
+              Die Rollenwahl steuert, welche Module nach der Anmeldung sichtbar sind.
+            </p>
+          </div>
+
+          <div class="auth-form__actions">
+            <button type="submit" class="btn btn-primary">Anmelden</button>
+            <a class="btn btn-secondary" href="index.html">Ohne Anmeldung fortfahren</a>
+          </div>
+        </form>
+
+        <div id="login-feedback" class="auth-feedback" role="status" aria-live="polite" hidden>
+          <div class="auth-feedback__message" id="login-feedback-message"></div>
+          <div class="auth-feedback__actions">
+            <a class="btn btn-primary" href="index.html">Zur Demo wechseln</a>
+            <a class="btn btn-secondary" href="logout.html">Abmelden</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details">
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/login.js" type="module"></script>
+  </body>
+</html>
