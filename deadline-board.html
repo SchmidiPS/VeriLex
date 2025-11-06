@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Fristen-Board</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Fristen-Board</h1>
+      <p class="app-subtitle">
+        Priorisieren Sie juristische Fristen, erkennen Sie Engpässe frühzeitig und koordinieren Sie Zuständigkeiten.
+      </p>
+      <div class="welcome-actions">
+        <a class="btn btn-secondary" href="index.html">Zur Übersicht</a>
+        <a class="btn btn-secondary" href="case-detail.html">Zu einer Akte</a>
+        <a class="btn btn-secondary" href="open-items.html">Offene Posten</a>
+      </div>
+    </header>
+
+    <main class="app-main deadline-main" aria-live="polite">
+      <section class="deadline-board" aria-labelledby="deadline-board-title">
+        <header class="deadline-board__header">
+          <div>
+            <h2 id="deadline-board-title">Fristen nach Dringlichkeit</h2>
+            <p class="deadline-board__description">
+              Das Board gruppiert alle Demo-Fristen nach ihrem Status. Jede Karte zeigt neben Fälligkeit und Mandant auch die
+              verantwortliche Person und optionale Notizen.
+            </p>
+          </div>
+          <dl class="deadline-summary" aria-label="Fristenzusammenfassung">
+            <div class="deadline-summary__item deadline-summary__item--overdue">
+              <dt>Überfällig</dt>
+              <dd id="deadline-summary-overdue">0</dd>
+            </div>
+            <div class="deadline-summary__item deadline-summary__item--today">
+              <dt>Heute fällig</dt>
+              <dd id="deadline-summary-today">0</dd>
+            </div>
+            <div class="deadline-summary__item deadline-summary__item--soon">
+              <dt>In den nächsten 7 Tagen</dt>
+              <dd id="deadline-summary-soon">0</dd>
+            </div>
+            <div class="deadline-summary__item deadline-summary__item--upcoming">
+              <dt>Geplant</dt>
+              <dd id="deadline-summary-upcoming">0</dd>
+            </div>
+            <div class="deadline-summary__item deadline-summary__item--completed">
+              <dt>Erledigt</dt>
+              <dd id="deadline-summary-completed">0</dd>
+            </div>
+          </dl>
+        </header>
+
+        <p id="deadline-summary-total" class="deadline-summary__total" role="status">
+          Insgesamt 0 Fristen im aktuellen Filter.
+        </p>
+
+        <form class="deadline-filters" aria-label="Fristen filtern" novalidate>
+          <div class="deadline-filter">
+            <label class="deadline-filter__label" for="deadline-search">Schnellsuche</label>
+            <input
+              type="search"
+              id="deadline-search"
+              name="search"
+              placeholder="Nach Frist, Mandant oder Aktenzeichen suchen"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <div class="deadline-filter">
+            <label class="deadline-filter__label" for="deadline-status-filter">Status</label>
+            <select id="deadline-status-filter" name="status">
+              <option value="all">Alle Fristen</option>
+              <option value="critical">Nur kritische (heute &amp; überfällig)</option>
+              <option value="open">Alle offenen</option>
+              <option value="overdue">Überfällig</option>
+              <option value="today">Heute fällig</option>
+              <option value="soon">In den nächsten 7 Tagen</option>
+              <option value="upcoming">Geplant</option>
+              <option value="completed">Erledigt</option>
+            </select>
+          </div>
+          <div class="deadline-filter">
+            <label class="deadline-filter__label" for="deadline-owner-filter">Verantwortlich</label>
+            <select id="deadline-owner-filter" name="owner">
+              <option value="all">Alle Personen</option>
+            </select>
+          </div>
+          <div class="deadline-filter deadline-filter--checkbox">
+            <input type="checkbox" id="deadline-hide-completed" name="hideCompleted" />
+            <label for="deadline-hide-completed">Erledigte Fristen ausblenden</label>
+          </div>
+        </form>
+
+        <p id="deadline-filter-result" class="deadline-filter-result" role="status">
+          Keine Filter aktiv.
+        </p>
+
+        <p id="deadline-last-sync" class="deadline-board__meta" role="status"></p>
+
+        <div id="deadline-columns" class="deadline-columns" role="list"></div>
+
+        <p id="deadline-empty-state" class="deadline-empty-state" hidden>
+          Für die aktuelle Filterauswahl sind keine Fristen vorhanden.
+        </p>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details">
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="application/json" id="deadline-data">
+      [
+        {
+          "id": "DL-2025-001",
+          "title": "Einspruchsschrift an das Arbeitsgericht übermitteln",
+          "caseNumber": "A-2024-017",
+          "client": "Eva Schmidt",
+          "dueDate": "2025-11-06",
+          "status": "today",
+          "responsible": "RA Felix Bauer",
+          "type": "Gerichtliche Frist",
+          "notes": "Mandantin hat Änderungen am Morgen bestätigt.",
+          "tags": ["Arbeitsrecht", "Gericht"],
+          "location": "Arbeitsgericht München"
+        },
+        {
+          "id": "DL-2025-002",
+          "title": "Beschwerdebegründung vorbereiten",
+          "caseNumber": "V-2024-001",
+          "client": "Müller GmbH",
+          "dueDate": "2025-11-04",
+          "status": "overdue",
+          "responsible": "RAin Julia Wagner",
+          "type": "Fristverlängerung beantragt",
+          "notes": "Prüfung eingegangener Unterlagen, Rücksprache mit Mandant steht aus.",
+          "tags": ["Vertragsrecht"],
+          "location": "OLG Nürnberg"
+        },
+        {
+          "id": "DL-2025-003",
+          "title": "Versäumnisurteil prüfen und Wiedereinsetzung veranlassen",
+          "caseNumber": "S-2024-032",
+          "client": "Contoso AG",
+          "dueDate": "2025-11-01",
+          "status": "overdue",
+          "responsible": "RA Markus Lindner",
+          "type": "Gerichtliche Wiedereinsetzung",
+          "notes": "Entscheidung muss mit Compliance abgestimmt werden.",
+          "tags": ["Steuerrecht", "Fristsicherung"],
+          "location": "Finanzgericht Köln"
+        },
+        {
+          "id": "DL-2025-004",
+          "title": "Vergleichsentwurf finalisieren und versenden",
+          "caseNumber": "I-2024-004",
+          "client": "GreenTech Holding",
+          "dueDate": "2025-11-09",
+          "status": "soon",
+          "responsible": "RAin Selma Ortiz",
+          "type": "Vergleichsverhandlung",
+          "notes": "Finanzielle Anpassungen laut letzter Vorstandsrunde einarbeiten.",
+          "tags": ["Investitionsrecht"],
+          "location": "Videokonferenz"
+        },
+        {
+          "id": "DL-2025-005",
+          "title": "Sachverhaltsdarstellung für Mietprozess vervollständigen",
+          "caseNumber": "M-2023-089",
+          "client": "Jonas Weber",
+          "dueDate": "2025-11-11",
+          "status": "soon",
+          "responsible": "RAin Laura Peters",
+          "type": "Mandantenabstimmung",
+          "notes": "Nachreichung der Nebenkostenabrechnungen erforderlich.",
+          "tags": ["Mietrecht"],
+          "location": "Kanzlei"
+        },
+        {
+          "id": "DL-2025-006",
+          "title": "Compliance-Update im Mandantenportal veröffentlichen",
+          "caseNumber": "C-2024-054",
+          "client": "FutureLabs GmbH",
+          "dueDate": "2025-11-20",
+          "status": "upcoming",
+          "responsible": "RA Noah Klein",
+          "type": "Mandanteninformation",
+          "notes": "Freigabe durch Marketing abwarten.",
+          "tags": ["Datenschutz"],
+          "location": "Mandantenportal"
+        },
+        {
+          "id": "DL-2025-007",
+          "title": "Beweismittelübersicht für Kartellverfahren aufbereiten",
+          "caseNumber": "K-2024-055",
+          "client": "Nordwind AG",
+          "dueDate": "2025-11-27",
+          "status": "upcoming",
+          "responsible": "RAin Miriam Holz",
+          "type": "Behördenabgabe",
+          "notes": "Zusätzliche Dokumente vom Mandanten angefordert.",
+          "tags": ["Kartellrecht"],
+          "location": "Bundeskartellamt"
+        },
+        {
+          "id": "DL-2025-008",
+          "title": "Fristverlängerung beantragt – Rückmeldung beobachten",
+          "caseNumber": "B-2024-072",
+          "client": "Skyline Projektentwicklung",
+          "dueDate": "2025-10-30",
+          "status": "completed",
+          "responsible": "RA Paul Steiner",
+          "type": "Fristverlängerung",
+          "completedDate": "2025-11-03",
+          "notes": "Verlängerung wurde bewilligt, neue Frist 20.11.2025.",
+          "tags": ["Baurecht"],
+          "location": "LG Frankfurt"
+        },
+        {
+          "id": "DL-2025-009",
+          "title": "Gutachtenentwurf an Mandantin senden",
+          "caseNumber": "F-2024-011",
+          "client": "Familie Krause",
+          "dueDate": "2025-11-06",
+          "status": "today",
+          "responsible": "RAin Nadine Vogt",
+          "type": "Familiengericht",
+          "notes": "Letzte redaktionelle Prüfung erforderlich.",
+          "tags": ["Familienrecht"],
+          "location": "Kanzlei"
+        }
+      ]
+    </script>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/deadline-board.js" type="module"></script>
+  </body>
+</html>
