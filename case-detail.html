@@ -17,7 +17,11 @@
         <a class="case-breadcrumb__link" href="index.html">&larr; Zur Aktenübersicht</a>
       </nav>
 
-      <section class="case-card case-detail-card" aria-labelledby="case-detail-title">
+      <section
+        class="case-card case-detail-card"
+        aria-labelledby="case-detail-title"
+        data-visible-for="partner,associate"
+      >
         <header class="case-detail-card__header">
           <div>
             <p id="case-number" class="case-detail__number" aria-live="polite"></p>
@@ -89,6 +93,14 @@
         </div>
       </section>
     </main>
+
+    <section class="role-access-message" data-visible-for="assistant,accounting">
+      <h2>Aktenhistorie vertraulich</h2>
+      <p>
+        Die Timeline steht nur Partner:innen und Associates zur Verfügung. Wechseln Sie oben die Rolle,
+        um die Aktenhistorie einzusehen.
+      </p>
+    </section>
 
     <div
       id="global-error-overlay"

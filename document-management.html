@@ -17,7 +17,11 @@
         <a class="case-breadcrumb__link" href="index.html">&larr; Zur Startseite</a>
       </nav>
 
-      <section class="app-card" aria-labelledby="document-dropzone-title">
+      <section
+        class="app-card"
+        aria-labelledby="document-dropzone-title"
+        data-visible-for="partner,associate,assistant"
+      >
         <header class="document-manager__header">
           <h2 id="document-dropzone-title">Dateien hochladen &amp; verwalten</h2>
           <p class="document-manager__description">
@@ -59,7 +63,11 @@
         </div>
       </section>
 
-      <section class="document-list-section" aria-labelledby="document-list-title">
+      <section
+        class="document-list-section"
+        aria-labelledby="document-list-title"
+        data-visible-for="partner,associate,assistant"
+      >
         <div class="document-list__header">
           <div>
             <h2 id="document-list-title">Hochgeladene Dokumente</h2>
@@ -72,6 +80,15 @@
         <p id="document-empty-state" class="document-empty-state" hidden>
           Noch wurden keine Dokumente hochgeladen. Nutzen Sie die Drag-&amp;-Drop-Zone, um die Liste zu
           füllen.
+        </p>
+      </section>
+
+      <section class="role-access-message" data-visible-for="accounting">
+        <h2>Dokumentenverwaltung gesperrt</h2>
+        <p>
+          In dieser Demo ist die Dokumentenverwaltung auf juristische Rollen und die Assistenz
+          beschränkt. Buchhaltungsteams haben ausschließlich Lesezugriff auf abrechnungsrelevante
+          Informationen.
         </p>
       </section>
     </main>

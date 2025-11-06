@@ -20,7 +20,11 @@
     </header>
 
     <main class="app-main calendar-main" aria-live="polite">
-      <section class="calendar-board" aria-labelledby="calendar-board-title">
+      <section
+        class="calendar-board"
+        aria-labelledby="calendar-board-title"
+        data-visible-for="partner,associate,assistant"
+      >
         <header class="calendar-board__header">
           <div>
             <h2 id="calendar-board-title">Termine des Monats</h2>
@@ -115,6 +119,14 @@
         </div>
       </section>
     </main>
+
+    <section class="role-access-message" data-visible-for="accounting">
+      <h2>Kalenderansicht nur für Fallteams</h2>
+      <p>
+        Gerichtstermine und Mandantenmeetings sind in dieser Demo den juristischen Rollen
+        vorbehalten. Für buchhalterische Aufgaben nutzen Sie bitte die Auswertungsseiten.
+      </p>
+    </section>
 
     <div
       id="global-error-overlay"

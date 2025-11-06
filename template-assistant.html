@@ -17,7 +17,11 @@
         <a class="case-breadcrumb__link" href="index.html">&larr; Zur Startseite</a>
       </nav>
 
-      <section class="app-card template-assistant" aria-labelledby="template-assistant-title">
+      <section
+        class="app-card template-assistant"
+        aria-labelledby="template-assistant-title"
+        data-visible-for="partner,associate,assistant"
+      >
         <header class="template-assistant__header">
           <div>
             <h2 id="template-assistant-title">Textbausteine auswählen &amp; anpassen</h2>
@@ -99,7 +103,11 @@
         </div>
       </section>
 
-      <section class="app-card document-draft" aria-labelledby="document-draft-title">
+      <section
+        class="app-card document-draft"
+        aria-labelledby="document-draft-title"
+        data-visible-for="partner,associate,assistant"
+      >
         <header class="document-draft__header">
           <div>
             <h2 id="document-draft-title">Dokumententwurf</h2>
@@ -126,6 +134,15 @@
             Noch keine Textbausteine eingefügt. Sobald Sie eine Vorlage übernehmen, erscheint sie hier.
           </p>
         </section>
+      </section>
+
+      <section class="role-access-message" data-visible-for="accounting">
+        <h2>Vorlagen-Assistent deaktiviert</h2>
+        <p>
+          Dieser Bereich richtet sich an Mitarbeitende, die Schriftsätze erstellen. Für Buchhaltung
+          und Controlling stehen andere Module zur Verfügung. Nutzen Sie den Rollen-Umschalter, um den
+          Zugriff zu simulieren.
+        </p>
       </section>
     </main>
 

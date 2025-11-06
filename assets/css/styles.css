@@ -14,6 +14,7 @@ body {
 }
 
 .app-header {
+  position: relative;
   background: linear-gradient(135deg, #1f3c88, #2f74c0);
   color: #fff;
   padding: 2rem clamp(1.5rem, 4vw, 4rem);
@@ -31,6 +32,84 @@ body {
   font-size: clamp(1rem, 2.5vw, 1.2rem);
   letter-spacing: 0.02em;
   opacity: 0.85;
+}
+
+.role-selector {
+  position: absolute;
+  top: 1rem;
+  right: clamp(1.5rem, 4vw, 4rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(15, 28, 62, 0.3);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 30px rgba(10, 22, 57, 0.25);
+}
+
+.role-selector__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.role-selector__input {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  padding: 0.35rem 1.8rem 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  cursor: pointer;
+  position: relative;
+}
+
+.role-selector__input:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 2px;
+}
+
+.role-selector__status {
+  margin: 0;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.is-hidden-by-role {
+  display: none !important;
+}
+
+.role-access-message {
+  width: min(650px, 100%);
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 16px;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  text-align: center;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.15);
+  border: 1px dashed rgba(31, 60, 136, 0.3);
+}
+
+.role-access-message h2 {
+  margin-top: 0;
+}
+
+@media (max-width: 720px) {
+  .role-selector {
+    position: static;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .role-selector__status {
+    width: 100%;
+    text-align: center;
+    margin-top: 0.25rem;
+  }
 }
 
 .app-main {

@@ -19,7 +19,11 @@
         <a class="wizard-breadcrumb__link" href="index.html">&larr; Zur Übersicht</a>
       </nav>
 
-      <section class="app-card wizard-card" aria-labelledby="invoice-wizard-title">
+      <section
+        class="app-card wizard-card"
+        aria-labelledby="invoice-wizard-title"
+        data-visible-for="partner,accounting"
+      >
         <header class="wizard-card__header">
           <h2 id="invoice-wizard-title">Rechnungs-Wizard</h2>
           <p id="invoice-wizard-description" class="wizard-card__description">
@@ -318,6 +322,14 @@
         </div>
       </section>
     </main>
+
+    <section class="role-access-message" data-visible-for="associate,assistant">
+      <h2>Rechnungsstellung eingeschränkt</h2>
+      <p>
+        Nur Partner:innen und das Buchhaltungsteam können Rechnungen erstellen. Wechseln Sie die Rolle
+        oben rechts, um den Wizard zu testen.
+      </p>
+    </section>
 
     <div
       id="global-error-overlay"

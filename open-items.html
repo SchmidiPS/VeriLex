@@ -20,7 +20,11 @@
     </header>
 
     <main class="app-main receivables-main" aria-live="polite">
-      <section class="receivables-board" aria-labelledby="receivables-title">
+      <section
+        class="receivables-board"
+        aria-labelledby="receivables-title"
+        data-visible-for="partner,accounting"
+      >
         <header class="receivables-board__header">
           <div>
             <h2 id="receivables-title">Statusüberblick Ihrer Forderungen</h2>
@@ -112,6 +116,14 @@
         </p>
       </section>
     </main>
+
+    <section class="role-access-message" data-visible-for="associate,assistant">
+      <h2>Offene Posten nur für Abrechnungsteams</h2>
+      <p>
+        Diese Übersicht unterstützt Partner:innen und Buchhaltung bei der Liquiditätsplanung. Wechseln
+        Sie oben die Rolle, um den Zugriff zu erhalten.
+      </p>
+    </section>
 
     <div
       id="global-error-overlay"

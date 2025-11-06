@@ -1,3 +1,190 @@
+const ROLE_DEFINITIONS = [
+  {
+    id: 'partner',
+    label: 'Partner:in',
+    description: 'Hat Vollzugriff auf alle Module, inklusive Rechnungs- und Workflow-Themen.',
+  },
+  {
+    id: 'associate',
+    label: 'Associate',
+    description: 'Fokus auf Mandatsbearbeitung, Dokumente und Fristen.',
+  },
+  {
+    id: 'assistant',
+    label: 'Assistenz',
+    description: 'Unterstützt bei Terminen, Dokumenten und Kommunikation.',
+  },
+  {
+    id: 'accounting',
+    label: 'Buchhaltung',
+    description: 'Konzentriert sich auf Rechnungen, offene Posten und Auswertungen.',
+  },
+];
+
+const ROLE_STORAGE_KEY = 'verilex.activeRole';
+const originalHiddenState = new WeakMap();
+let activeRoleId = null;
+
+function readStoredRole() {
+  try {
+    return localStorage.getItem(ROLE_STORAGE_KEY);
+  } catch (error) {
+    console.warn('Rollenpräferenz konnte nicht gelesen werden.', error);
+    return null;
+  }
+}
+
+function writeStoredRole(roleId) {
+  try {
+    localStorage.setItem(ROLE_STORAGE_KEY, roleId);
+  } catch (error) {
+    console.warn('Rollenpräferenz konnte nicht gespeichert werden.', error);
+  }
+}
+
+function getRoleDefinition(roleId) {
+  const normalized = (roleId ?? '').toString().trim().toLowerCase();
+  return (
+    ROLE_DEFINITIONS.find((role) => role.id === normalized) ??
+    ROLE_DEFINITIONS[0]
+  );
+}
+
+function parseRoleList(value) {
+  if (!value) return [];
+  return value
+    .split(',')
+    .map((role) => role.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function setNodeVisibility(node, isVisible) {
+  if (!originalHiddenState.has(node)) {
+    originalHiddenState.set(node, node.hasAttribute('hidden'));
+  }
+
+  if (!isVisible) {
+    node.classList.add('is-hidden-by-role');
+    node.setAttribute('aria-hidden', 'true');
+    node.dataset.roleHidden = 'true';
+    node.setAttribute('hidden', '');
+  } else {
+    node.classList.remove('is-hidden-by-role');
+    node.removeAttribute('aria-hidden');
+    delete node.dataset.roleHidden;
+
+    if (originalHiddenState.get(node)) {
+      node.setAttribute('hidden', '');
+    } else {
+      node.removeAttribute('hidden');
+    }
+  }
+}
+
+function updateRoleStatus(roleDefinition) {
+  const statusEl = document.getElementById('role-selector-status');
+  if (statusEl) {
+    statusEl.textContent = `Aktive Rolle: ${roleDefinition.label}`;
+  }
+  document.documentElement.setAttribute('data-active-role', roleDefinition.id);
+}
+
+function applyRoleVisibility(requestedRoleId) {
+  const roleDefinition = getRoleDefinition(requestedRoleId);
+  activeRoleId = roleDefinition.id;
+  updateRoleStatus(roleDefinition);
+
+  const nodes = document.querySelectorAll('[data-visible-for]');
+  nodes.forEach((node) => {
+    const allowedRoles = parseRoleList(node.getAttribute('data-visible-for'));
+    const isVisible =
+      allowedRoles.includes('all') ||
+      allowedRoles.includes(activeRoleId);
+    setNodeVisibility(node, isVisible);
+  });
+}
+
+function createRoleSelector() {
+  const header = document.querySelector('.app-header');
+  if (!header) {
+    applyRoleVisibility(activeRoleId ?? ROLE_DEFINITIONS[0].id);
+    return;
+  }
+
+  if (header.querySelector('.role-selector')) {
+    return;
+  }
+
+  const roleSelector = document.createElement('div');
+  roleSelector.className = 'role-selector';
+
+  const label = document.createElement('label');
+  label.className = 'role-selector__label';
+  label.htmlFor = 'role-selector';
+  label.textContent = 'Rolle';
+
+  const select = document.createElement('select');
+  select.id = 'role-selector';
+  select.className = 'role-selector__input';
+  select.setAttribute('aria-describedby', 'role-selector-status');
+  select.setAttribute('aria-label', 'Aktive Rolle wählen');
+
+  ROLE_DEFINITIONS.forEach((role) => {
+    const option = document.createElement('option');
+    option.value = role.id;
+    option.textContent = role.label;
+    option.title = role.description;
+    select.append(option);
+  });
+
+  const status = document.createElement('p');
+  status.id = 'role-selector-status';
+  status.className = 'role-selector__status';
+  status.setAttribute('role', 'status');
+  status.setAttribute('aria-live', 'polite');
+
+  const storedRole = readStoredRole();
+  const initialRole = getRoleDefinition(storedRole).id;
+  select.value = initialRole;
+
+  select.addEventListener('change', (event) => {
+    const nextRole = getRoleDefinition(event.target.value).id;
+    writeStoredRole(nextRole);
+    applyRoleVisibility(nextRole);
+  });
+
+  roleSelector.append(label, select, status);
+  header.append(roleSelector);
+
+  applyRoleVisibility(initialRole);
+
+  window.verilexRoleAccess = {
+    getActiveRole: () => activeRoleId,
+    setRole: (roleId) => {
+      const nextRole = getRoleDefinition(roleId).id;
+      select.value = nextRole;
+      writeStoredRole(nextRole);
+      applyRoleVisibility(nextRole);
+    },
+    definitions: ROLE_DEFINITIONS.map((role) => ({ ...role })),
+  };
+}
+
+function initRoleAccessControl() {
+  const storedRole = readStoredRole();
+  activeRoleId = getRoleDefinition(storedRole).id;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', createRoleSelector, {
+      once: true,
+    });
+  } else {
+    createRoleSelector();
+  }
+}
+
+initRoleAccessControl();
+
 class GlobalErrorOverlay {
   constructor(root) {
     this.root = root;

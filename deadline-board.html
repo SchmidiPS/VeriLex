@@ -20,7 +20,11 @@
     </header>
 
     <main class="app-main deadline-main" aria-live="polite">
-      <section class="deadline-board" aria-labelledby="deadline-board-title">
+      <section
+        class="deadline-board"
+        aria-labelledby="deadline-board-title"
+        data-visible-for="partner,associate,assistant"
+      >
         <header class="deadline-board__header">
           <div>
             <h2 id="deadline-board-title">Fristen nach Dringlichkeit</h2>
@@ -107,6 +111,14 @@
         </p>
       </section>
     </main>
+
+    <section class="role-access-message" data-visible-for="accounting">
+      <h2>Fristenübersicht eingeschränkt</h2>
+      <p>
+        Die Fristenübersicht richtet sich an Fallteams zur Organisation von Abgaben und Terminen.
+        Für buchhalterische Rollen stehen andere Module bereit.
+      </p>
+    </section>
 
     <div
       id="global-error-overlay"
