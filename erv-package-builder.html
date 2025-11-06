@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – ERV-Paket-Builder</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Elektronisches Rechtsverkehrspaket vorbereiten</h1>
+      <p class="app-subtitle">
+        Sammeln Sie Dokumente, prüfen Sie Pflichtangaben und simulieren Sie die Übergabe an das Gericht – vollständig im
+        Mock-Modus.
+      </p>
+    </header>
+
+    <main class="app-main erv-builder-main" aria-live="polite">
+      <nav class="case-breadcrumb" aria-label="Navigation">
+        <a class="case-breadcrumb__link" href="index.html">&larr; Zur Startseite</a>
+      </nav>
+
+      <section class="erv-board" aria-labelledby="erv-builder-title">
+        <header class="erv-board__header">
+          <div>
+            <h2 id="erv-builder-title">ERV-Paket-Builder (Mock)</h2>
+            <p class="erv-board__description" id="erv-builder-description">
+              Der Builder unterstützt dabei, ein strukturiertes ERV-Paket zusammenzustellen. Pflichtfelder, Signaturstatus und
+              Paketgröße werden in Echtzeit validiert.
+            </p>
+          </div>
+          <div class="erv-board__status" aria-live="polite">
+            <span id="erv-validation-badge" class="status-pill status-pill--draft">Entwurf</span>
+            <p id="erv-package-summary" class="erv-board__meta"></p>
+          </div>
+        </header>
+
+        <ol class="erv-progress" role="list" aria-label="Bearbeitungsschritte">
+          <li class="erv-progress__step" data-step="1">
+            <span class="erv-progress__title">Paketdaten</span>
+            <span class="erv-progress__hint">Mandant, Empfänger, Versandart</span>
+          </li>
+          <li class="erv-progress__step" data-step="2">
+            <span class="erv-progress__title">Dokumente</span>
+            <span class="erv-progress__hint">Upload &amp; Klassifizierung</span>
+          </li>
+          <li class="erv-progress__step" data-step="3">
+            <span class="erv-progress__title">Validierung</span>
+            <span class="erv-progress__hint">Pflichtfelder &amp; Größe</span>
+          </li>
+          <li class="erv-progress__step" data-step="4">
+            <span class="erv-progress__title">Übergabe</span>
+            <span class="erv-progress__hint">Übermittlung simulieren</span>
+          </li>
+        </ol>
+
+        <div class="erv-board__grid">
+          <form id="erv-form" class="erv-form" novalidate aria-describedby="erv-builder-description">
+            <fieldset class="erv-fieldset" aria-labelledby="erv-package-settings-title">
+              <legend id="erv-package-settings-title" class="erv-fieldset__title">Paketinformationen</legend>
+              <p class="erv-fieldset__hint">
+                Diese Angaben werden automatisch in die Versand-Metadaten übernommen. Pflichtfelder sind mit * gekennzeichnet.
+              </p>
+
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="erv-package-name">Paketname *</label>
+                  <input
+                    id="erv-package-name"
+                    name="packageName"
+                    type="text"
+                    required
+                    maxlength="80"
+                    placeholder="z. B. 23 O 51/25 – Klageeinreichung"
+                    aria-describedby="erv-package-name-error"
+                  />
+                  <p id="erv-package-name-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+
+                <div class="form-field">
+                  <label for="erv-recipient">Empfänger *</label>
+                  <select id="erv-recipient" name="recipient" required aria-describedby="erv-recipient-error">
+                    <option value="" disabled selected>Empfangsgericht auswählen</option>
+                  </select>
+                  <p id="erv-recipient-error" class="field-error" role="status" aria-live="polite"></p>
+                </div>
+
+                <div class="form-field">
+                  <label for="erv-submission-type">Versandart *</label>
+                  <select id="erv-submission-type" name="submissionType" required aria-describedby="erv-submission-type-hint">
+                    <option value="" disabled selected>Bitte wählen</option>
+                    <option value="standard">Standard (Justizpostfach)</option>
+                    <option value="priority">Priorisiert (Fristsache)</option>
+                    <option value="draft">Entwurf speichern</option>
+                  </select>
+                  <p id="erv-submission-type-hint" class="form-field__hint">
+                    Die Versandart steuert Fristen und Empfangsbestätigungen.
+                  </p>
+                </div>
+
+                <div class="form-field">
+                  <label for="erv-deadline">Frist (optional)</label>
+                  <input id="erv-deadline" name="deadline" type="date" aria-describedby="erv-deadline-hint" />
+                  <p id="erv-deadline-hint" class="form-field__hint">Wird für die Erinnerungslogik genutzt.</p>
+                </div>
+
+                <div class="form-field form-field--full">
+                  <label for="erv-message">Begleitnachricht</label>
+                  <textarea
+                    id="erv-message"
+                    name="message"
+                    rows="3"
+                    maxlength="500"
+                    placeholder="Kurztext für das Gericht"
+                  ></textarea>
+                  <p class="form-field__hint">Die Nachricht wird im elektronischen Anschreiben mitgesendet.</p>
+                </div>
+              </div>
+
+              <div class="erv-toggle">
+                <label class="erv-toggle__label">
+                  <input type="checkbox" id="erv-encryption" name="encryption" checked />
+                  <span>End-zu-End-Verschlüsselung aktivieren</span>
+                </label>
+                <p class="form-field__hint">Empfohlen: Stellt sicher, dass sensible Inhalte geschützt übertragen werden.</p>
+              </div>
+            </fieldset>
+
+            <section class="erv-upload" aria-labelledby="erv-dropzone-title">
+              <header class="erv-upload__header">
+                <h3 id="erv-dropzone-title">Dokumente hinzufügen</h3>
+                <p class="erv-upload__hint">
+                  Ziehen Sie Dateien hierher oder nutzen Sie die Auswahl. Die Demo akzeptiert PDF, TIFF und Text-Dateien und
+                  analysiert die Meta-Daten lokal im Browser.
+                </p>
+              </header>
+
+              <div
+                id="erv-dropzone"
+                class="erv-dropzone"
+                role="button"
+                tabindex="0"
+                aria-describedby="erv-dropzone-hint"
+                aria-label="Dokumente für das ERV-Paket hinzufügen"
+              >
+                <div class="erv-dropzone__icon" aria-hidden="true">📄</div>
+                <p class="erv-dropzone__text">Dateien hier ablegen oder klicken, um auszuwählen</p>
+                <p id="erv-dropzone-hint" class="erv-dropzone__hint">Maximale Paketgröße (Mock): 50&nbsp;MB</p>
+                <div class="erv-dropzone__actions">
+                  <button type="button" class="btn btn-primary" id="erv-select-files">Dateien auswählen</button>
+                  <button type="button" class="btn btn-secondary" id="erv-clear-files">Liste leeren</button>
+                </div>
+                <input
+                  type="file"
+                  id="erv-file-input"
+                  class="erv-dropzone__input"
+                  multiple
+                  accept=".pdf,.tif,.tiff,.rtf,.txt,.doc,.docx"
+                  tabindex="-1"
+                  aria-hidden="true"
+                />
+              </div>
+            </section>
+
+            <section class="erv-documents" aria-labelledby="erv-document-list-title">
+              <header class="erv-documents__header">
+                <div>
+                  <h3 id="erv-document-list-title">Aktuelle Paketbestandteile</h3>
+                  <p class="erv-documents__description" id="erv-document-summary"></p>
+                </div>
+                <div class="erv-documents__badge" aria-live="polite">
+                  <span id="erv-documents-count" class="status-pill status-pill--info">0 Dokumente</span>
+                </div>
+              </header>
+
+              <ul id="erv-document-list" class="erv-document-list" role="list"></ul>
+              <p id="erv-document-empty" class="erv-empty-state" hidden>
+                Noch keine Dokumente hinzugefügt. Nutzen Sie die Drag-&amp;-Drop-Zone oder fügen Sie ein Demo-Dokument hinzu.
+              </p>
+            </section>
+          </form>
+
+          <aside class="erv-sidebar" aria-label="Validierung &amp; Simulation">
+            <section class="erv-side-card" aria-labelledby="erv-validation-title">
+              <h3 id="erv-validation-title">Validierungsstatus</h3>
+              <p class="erv-side-card__hint">
+                Fehler müssen behoben werden, bevor das Paket simuliert übermittelt werden kann. Warnungen sind optional.
+              </p>
+              <ul id="erv-validation-list" class="erv-validation-list" role="list"></ul>
+              <p id="erv-validation-empty" class="erv-validation-empty">Noch keine Prüfungen notwendig.</p>
+            </section>
+
+            <section class="erv-side-card" aria-labelledby="erv-sample-title">
+              <h3 id="erv-sample-title">Demo-Dokumente</h3>
+              <p class="erv-side-card__hint">
+                Nutzen Sie vorbereitete Beispieldateien, um den Prozess ohne eigene Dokumente zu testen.
+              </p>
+              <ul id="erv-sample-list" class="erv-sample-list" role="list"></ul>
+            </section>
+
+            <section class="erv-side-card" aria-labelledby="erv-submit-title">
+              <h3 id="erv-submit-title">Paket übermitteln</h3>
+              <p class="erv-side-card__hint">Ist alles grün, kann das Paket zur Justizpoststelle gesendet werden.</p>
+              <div class="erv-submit">
+                <button type="button" class="btn btn-primary" id="erv-submit" disabled>Übergabe simulieren</button>
+                <button type="button" class="btn btn-secondary" id="erv-export" disabled>Metadaten als JSON exportieren</button>
+              </div>
+              <p id="erv-submit-feedback" class="erv-submit__feedback" role="status" aria-live="polite"></p>
+            </section>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button type="button" class="error-overlay__close" aria-label="Fehlermeldung schließen" data-error-action="dismiss">
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details" hidden>
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="application/json" id="erv-recipient-data">
+      [
+        {
+          "id": "berlin-lg",
+          "name": "Landgericht Berlin",
+          "address": "Littenstraße 12-17, 10179 Berlin",
+          "supportsPriority": true
+        },
+        {
+          "id": "muc-ag",
+          "name": "Amtsgericht München",
+          "address": "Pacellistraße 5, 80333 München",
+          "supportsPriority": true
+        },
+        {
+          "id": "hamburg-fg",
+          "name": "Finanzgericht Hamburg",
+          "address": "Lübeckertordamm 4, 20099 Hamburg",
+          "supportsPriority": false
+        },
+        {
+          "id": "stuttgart-olg",
+          "name": "Oberlandesgericht Stuttgart",
+          "address": "Olgastraße 2, 70182 Stuttgart",
+          "supportsPriority": true
+        }
+      ]
+    </script>
+
+    <script type="application/json" id="erv-sample-documents">
+      [
+        {
+          "id": "sample-main",
+          "name": "Klageeingabe_Anlage.pdf",
+          "type": "application/pdf",
+          "size": 4820000,
+          "role": "hauptdokument",
+          "signed": true,
+          "description": "Begründung des Klagebegehrens"
+        },
+        {
+          "id": "sample-attachment",
+          "name": "Anlage_Beweisfoto1.tif",
+          "type": "image/tiff",
+          "size": 1640000,
+          "role": "beilage",
+          "signed": false,
+          "description": "Foto des beschädigten Fahrzeugs"
+        },
+        {
+          "id": "sample-proof",
+          "name": "Zustellnachweis.txt",
+          "type": "text/plain",
+          "size": 1200,
+          "role": "nachweis",
+          "signed": false,
+          "description": "Bestätigung der Zustellung an die Gegenseite"
+        }
+      ]
+    </script>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/erv-package-builder.js" type="module"></script>
+  </body>
+</html>
