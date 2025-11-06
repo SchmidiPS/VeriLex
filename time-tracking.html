@@ -16,7 +16,11 @@
     </header>
 
     <main class="app-main time-tracking-layout" aria-live="polite">
-      <section class="app-card time-tracking-card" aria-labelledby="time-tracking-title">
+      <section
+        class="app-card time-tracking-card"
+        aria-labelledby="time-tracking-title"
+        data-visible-for="partner,associate,assistant"
+      >
         <div class="time-tracking-card__header">
           <div>
             <h2 id="time-tracking-title">Stoppuhr für Tätigkeiten</h2>
@@ -74,7 +78,11 @@
         </div>
       </section>
 
-      <section class="app-card performance-card" aria-labelledby="performance-title">
+      <section
+        class="app-card performance-card"
+        aria-labelledby="performance-title"
+        data-visible-for="partner,associate,assistant"
+      >
         <header class="performance-card__header">
           <div>
             <h2 id="performance-title">Leistungsübersicht</h2>
@@ -113,6 +121,14 @@
         <p id="performance-empty-state" class="performance-empty-state">Noch keine Einträge vorhanden. Starten Sie die Stoppuhr, um die erste Leistung zu erfassen.</p>
       </section>
     </main>
+
+    <section class="role-access-message" data-visible-for="accounting">
+      <h2>Zeiterfassung nicht verfügbar</h2>
+      <p>
+        Die Zeiterfassung ist den juristischen Teams vorbehalten. Buchhaltung und Controlling greifen
+        stattdessen auf Leistungs- und Rechnungsübersichten zu.
+      </p>
+    </section>
 
     <div
       id="global-error-overlay"

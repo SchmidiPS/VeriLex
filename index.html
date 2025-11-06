@@ -24,22 +24,98 @@
           <button type="button" id="trigger-demo-error" class="btn btn-secondary">
             Demo-Fehler auslösen
           </button>
-          <a class="btn btn-primary" href="mandate-wizard.html">Mandats-Wizard starten</a>
-          <a class="btn btn-secondary" href="document-management.html">Dokumentenverwaltung</a>
-          <a class="btn btn-secondary" href="template-assistant.html">Vorlagen-Assistent</a>
-          <a class="btn btn-secondary" href="time-tracking.html">Zeiterfassung</a>
-          <a class="btn btn-secondary" href="calendar.html">Termin-Kalender</a>
-          <a class="btn btn-secondary" href="performance-overview.html">Leistungsübersicht</a>
-          <a class="btn btn-secondary" href="deadline-board.html">Fristen-Board</a>
-          <a class="btn btn-secondary" href="erv-package-builder.html">ERV-Paket-Builder</a>
-          <a class="btn btn-secondary" href="invoice-wizard.html">Rechnungs-Wizard</a>
-          <a class="btn btn-secondary" href="open-items.html">Offene Posten</a>
-          <a class="btn btn-secondary" href="email-integration.html">E-Mail-Inbox</a>
-          <a class="btn btn-secondary" href="workflow-designer.html">Workflow-Designer</a>
+          <a
+            class="btn btn-primary"
+            href="mandate-wizard.html"
+            data-visible-for="partner,associate"
+          >
+            Mandats-Wizard starten
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="document-management.html"
+            data-visible-for="partner,associate,assistant"
+          >
+            Dokumentenverwaltung
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="template-assistant.html"
+            data-visible-for="partner,associate,assistant"
+          >
+            Vorlagen-Assistent
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="time-tracking.html"
+            data-visible-for="partner,associate,assistant"
+          >
+            Zeiterfassung
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="calendar.html"
+            data-visible-for="partner,associate,assistant"
+          >
+            Termin-Kalender
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="performance-overview.html"
+            data-visible-for="partner,accounting"
+          >
+            Leistungsübersicht
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="deadline-board.html"
+            data-visible-for="partner,associate,assistant"
+          >
+            Fristen-Board
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="erv-package-builder.html"
+            data-visible-for="partner,associate"
+          >
+            ERV-Paket-Builder
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="invoice-wizard.html"
+            data-visible-for="partner,accounting"
+          >
+            Rechnungs-Wizard
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="open-items.html"
+            data-visible-for="partner,accounting"
+          >
+            Offene Posten
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="email-integration.html"
+            data-visible-for="partner,associate,assistant"
+          >
+            E-Mail-Inbox
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="workflow-designer.html"
+            data-visible-for="partner"
+          >
+            Workflow-Designer
+          </a>
         </div>
       </section>
 
-      <section class="case-directory" aria-labelledby="case-directory-title">
+      <section
+        class="case-directory"
+        aria-labelledby="case-directory-title"
+        data-visible-for="partner,associate,assistant"
+      >
         <div class="case-directory__header">
           <div>
             <h2 id="case-directory-title">Aktenübersicht</h2>
@@ -68,6 +144,15 @@
 
         <p id="case-empty-state" class="case-empty-state" hidden>
           Keine Akte entspricht der aktuellen Suche. Bitte passen Sie den Suchbegriff an.
+        </p>
+      </section>
+
+      <section class="role-access-message" data-visible-for="accounting">
+        <h2>Eingeschränkte Aktenansicht</h2>
+        <p>
+          Als Mitglied der Buchhaltung liegt Ihr Schwerpunkt auf Rechnungswesen und offenen Posten.
+          Die Aktenübersicht steht deshalb nur Kolleg:innen in der Fallbearbeitung zur Verfügung.
+          Wechseln Sie oben die Rolle, um den Zugriff zu simulieren.
         </p>
       </section>
     </main>

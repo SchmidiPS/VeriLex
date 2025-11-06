@@ -17,7 +17,11 @@
         <a class="wizard-breadcrumb__link" href="index.html">&larr; Zur Übersicht</a>
       </nav>
 
-      <section class="app-card wizard-card" aria-labelledby="wizard-title">
+      <section
+        class="app-card wizard-card"
+        aria-labelledby="wizard-title"
+        data-visible-for="partner,associate"
+      >
         <header class="wizard-card__header">
           <h2 id="wizard-title">Mandatsanlage</h2>
           <p id="wizard-description" class="wizard-card__description">
@@ -291,6 +295,14 @@
           </p>
           <button type="button" class="btn" id="wizard-reset">Neues Mandat erfassen</button>
         </div>
+      </section>
+
+      <section class="role-access-message" data-visible-for="assistant,accounting">
+        <h2>Zugriff nur für Jurist:innen</h2>
+        <p>
+          Der Mandats-Wizard steht Partner:innen und Associates zur Verfügung, da hier neue Mandate
+          angelegt und juristisch bewertet werden. Wechseln Sie oben die Rolle, um den Ablauf zu testen.
+        </p>
       </section>
     </main>
 

@@ -19,7 +19,11 @@
     </header>
 
     <main class="app-main performance-overview-main" aria-live="polite">
-      <section class="performance-overview" aria-labelledby="performance-overview-title">
+      <section
+        class="performance-overview"
+        aria-labelledby="performance-overview-title"
+        data-visible-for="partner,accounting"
+      >
         <header class="performance-overview__header">
           <div>
             <h2 id="performance-overview-title">Gefilterte Leistungsdaten</h2>
@@ -105,6 +109,15 @@
         </p>
       </section>
     </main>
+
+    <section class="role-access-message" data-visible-for="associate,assistant">
+      <h2>Auswertung nur für Management &amp; Buchhaltung</h2>
+      <p>
+        Diese Leistungsanalyse richtet sich an Partner:innen und das Buchhaltungsteam. Wechseln Sie
+        oben die Rolle, um die Kennzahlen einzublenden oder wenden Sie sich an Ihr Team für einen
+        Export.
+      </p>
+    </section>
 
     <div
       id="global-error-overlay"

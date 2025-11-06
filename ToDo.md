@@ -67,8 +67,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 17. **Termin-Kalender** – Erstelle eine Kalenderansicht mit anstehenden Gerichtsterminen oder Besprechungen.
     Status: ✅ erledigt – 2025-11-06
 
-18. **Rollen-basierte UI-Sichtbarkeit** – Passe bestehende Seiten/Module so an, dass sie je nach aktuell angemeldeter Rolle angezeigt oder verborgen werden. Für den Mock reicht eine Dropdown-Auswahl.  
-    Status: ⬜
+18. **Rollen-basierte UI-Sichtbarkeit** – Passe bestehende Seiten/Module so an, dass sie je nach aktuell angemeldeter Rolle angezeigt oder verborgen werden. Für den Mock reicht eine Dropdown-Auswahl.
+    Status: ✅ erledigt – 2025-11-06
 
 19. **Login-/Logout-Seiten** – Implementiere einfache Anmelde- und Abmelde-Seiten (Mock-Zustand). Keine echte Authentifizierung nötig.  
     Status: ⬜
