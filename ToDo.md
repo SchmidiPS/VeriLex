@@ -56,7 +56,7 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
     Status: ✅ erledigt – 2025-11-05
 
 14. **ERV-Paket-Builder (Mock)** – Simuliere das Erstellen eines elektronischen Rechtsverkehr-Pakets mit Upload-Liste und Validierungsanzeige.  
-    Status: ⬜
+    Status: ✅ erledigt – 2025-11-05
 
 15. **Workflow-Designer (Mock)** – Implementiere eine einfache Drag-&-Drop-Fläche, auf der Prozess-Kacheln verbunden werden können.  
     Status: ⬜
