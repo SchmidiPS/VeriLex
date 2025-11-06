@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Workflow-Designer</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>VeriLex Demo</h1>
+      <p class="app-subtitle">Visueller Workflow-Designer (Mock)</p>
+    </header>
+
+    <main class="app-main workflow-designer-main" aria-live="polite">
+      <nav class="case-breadcrumb" aria-label="Brotkrumen">
+        <a class="case-breadcrumb__link" href="index.html">&larr; Zur Startseite</a>
+      </nav>
+
+      <section class="workflow-designer" aria-labelledby="workflow-designer-title">
+        <header class="workflow-designer__header">
+          <div>
+            <h2 id="workflow-designer-title">Abläufe modellieren &amp; visualisieren</h2>
+            <p class="workflow-designer__description">
+              Ziehen Sie Prozessschritte aus der linken Palette in die Fläche. Positionieren Sie sie frei und verbinden Sie
+              Arbeitsschritte durch Klicken der jeweiligen Kacheln. Alle Verbindungen erscheinen rechts in der Übersicht.
+            </p>
+          </div>
+          <div class="workflow-designer__actions">
+            <button type="button" id="workflow-clear" class="btn btn-secondary">Workflow zurücksetzen</button>
+          </div>
+        </header>
+
+        <div class="workflow-designer__layout">
+          <section
+            class="workflow-palette"
+            aria-labelledby="workflow-palette-title"
+            aria-describedby="workflow-palette-description"
+          >
+            <h3 id="workflow-palette-title">Prozessbausteine</h3>
+            <p id="workflow-palette-description" class="workflow-palette__hint">
+              Ziehen Sie Bausteine per Drag &amp; Drop in den Arbeitsbereich.
+            </p>
+            <ul class="workflow-palette__list" role="list">
+              <li>
+                <button type="button" class="workflow-palette__item" draggable="true" data-workflow-step="Mandatsanlage">
+                  Mandatsanlage
+                </button>
+              </li>
+              <li>
+                <button type="button" class="workflow-palette__item" draggable="true" data-workflow-step="Dokumentenprüfung">
+                  Dokumentenprüfung
+                </button>
+              </li>
+              <li>
+                <button type="button" class="workflow-palette__item" draggable="true" data-workflow-step="Fristenkontrolle">
+                  Fristenkontrolle
+                </button>
+              </li>
+              <li>
+                <button type="button" class="workflow-palette__item" draggable="true" data-workflow-step="Erstellung Schriftsatz">
+                  Erstellung Schriftsatz
+                </button>
+              </li>
+              <li>
+                <button type="button" class="workflow-palette__item" draggable="true" data-workflow-step="Versand über ERV">
+                  Versand über ERV
+                </button>
+              </li>
+              <li>
+                <button type="button" class="workflow-palette__item" draggable="true" data-workflow-step="Mandanteninformation">
+                  Mandanteninformation
+                </button>
+              </li>
+              <li>
+                <button type="button" class="workflow-palette__item" draggable="true" data-workflow-step="Archivierung">
+                  Archivierung
+                </button>
+              </li>
+            </ul>
+          </section>
+
+          <section class="workflow-canvas-wrapper" aria-labelledby="workflow-canvas-title">
+            <div class="workflow-canvas__header">
+              <h3 id="workflow-canvas-title">Arbeitsbereich</h3>
+              <p class="workflow-canvas__hint" id="workflow-canvas-hint">
+                Tipp: Klicken Sie einen Schritt an und anschließend einen weiteren, um eine Verbindung zu erzeugen.
+              </p>
+            </div>
+            <div
+              id="workflow-canvas"
+              class="workflow-canvas"
+              role="application"
+              aria-describedby="workflow-canvas-hint"
+              data-current-selection=""
+              tabindex="0"
+            >
+              <svg id="workflow-connections" class="workflow-connections" aria-hidden="true"></svg>
+            </div>
+          </section>
+
+          <section class="workflow-inspector" aria-labelledby="workflow-inspector-title">
+            <div class="workflow-inspector__header">
+              <h3 id="workflow-inspector-title">Verbindungen</h3>
+              <p class="workflow-inspector__summary" id="workflow-connection-summary" role="status"></p>
+            </div>
+            <ul id="workflow-connection-list" class="workflow-connection-list" role="list"></ul>
+            <p id="workflow-connection-empty" class="workflow-connection-empty">
+              Noch keine Verbindungen vorhanden. Wählen Sie nacheinander zwei Schritte aus, um eine Linie zu erstellen.
+            </p>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document" tabindex="-1">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details" hidden>
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script src="assets/js/app.js" defer></script>
+    <script src="assets/js/workflow-designer.js" defer></script>
+  </body>
+</html>
