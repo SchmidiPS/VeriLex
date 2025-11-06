@@ -64,8 +64,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 16. **Fristen-Board** – Baue ein farbcodiertes Board mit Fristen (z. B. grün = offen, rot = überfällig).
     Status: ✅ erledigt – 2025-11-06
 
-17. **Termin-Kalender** – Erstelle eine Kalenderansicht mit anstehenden Gerichtsterminen oder Besprechungen.  
-    Status: ⬜
+17. **Termin-Kalender** – Erstelle eine Kalenderansicht mit anstehenden Gerichtsterminen oder Besprechungen.
+    Status: ✅ erledigt – 2025-11-06
 
 18. **Rollen-basierte UI-Sichtbarkeit** – Passe bestehende Seiten/Module so an, dass sie je nach aktuell angemeldeter Rolle angezeigt oder verborgen werden. Für den Mock reicht eine Dropdown-Auswahl.  
     Status: ⬜
