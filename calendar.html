@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Termin-Kalender</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Termin-Kalender</h1>
+      <p class="app-subtitle">
+        Koordinieren Sie Gerichtstermine und Besprechungen, behalten Sie Konflikte im Blick und navigieren Sie schnell zu relevanten Akten.
+      </p>
+      <div class="welcome-actions">
+        <a class="btn btn-secondary" href="index.html">Zur Übersicht</a>
+        <a class="btn btn-secondary" href="deadline-board.html">Fristen-Board</a>
+        <a class="btn btn-secondary" href="time-tracking.html">Zeiterfassung</a>
+      </div>
+    </header>
+
+    <main class="app-main calendar-main" aria-live="polite">
+      <section class="calendar-board" aria-labelledby="calendar-board-title">
+        <header class="calendar-board__header">
+          <div>
+            <h2 id="calendar-board-title">Termine des Monats</h2>
+            <p class="calendar-board__description">
+              Wechseln Sie zwischen Monaten, filtern Sie nach Terminart und durchsuchen Sie alle geplanten Ereignisse nach Aktenzeichen, Mandanten oder Stichworten.
+            </p>
+          </div>
+          <div class="calendar-board__nav" role="group" aria-label="Kalendermonate wechseln">
+            <button type="button" class="btn btn-secondary calendar-board__nav-button" id="calendar-prev" aria-label="Vorherigen Monat anzeigen">
+              ◀
+            </button>
+            <div class="calendar-board__current-month" id="calendar-current-month" role="status" aria-live="polite"></div>
+            <button type="button" class="btn btn-secondary calendar-board__nav-button" id="calendar-next" aria-label="Nächsten Monat anzeigen">
+              ▶
+            </button>
+          </div>
+        </header>
+
+        <form class="calendar-filters" aria-label="Termine filtern" novalidate>
+          <div class="calendar-filter">
+            <label class="calendar-filter__label" for="calendar-search">Schnellsuche</label>
+            <input
+              type="search"
+              id="calendar-search"
+              name="search"
+              placeholder="Nach Titel, Aktenzeichen, Mandant oder Ort suchen"
+              autocomplete="off"
+              spellcheck="false"
+              aria-describedby="calendar-filter-summary"
+            />
+          </div>
+          <div class="calendar-filter">
+            <label class="calendar-filter__label" for="calendar-type-filter">Terminart</label>
+            <select id="calendar-type-filter" name="type">
+              <option value="all">Alle Termine</option>
+              <option value="hearing">Gerichtstermine</option>
+              <option value="meeting">Mandanten- &amp; Team-Meetings</option>
+              <option value="deadline">Fristbezogene Termine</option>
+              <option value="workshop">Workshops &amp; Schulungen</option>
+            </select>
+          </div>
+          <div class="calendar-filter">
+            <label class="calendar-filter__label" for="calendar-location-filter">Standort</label>
+            <select id="calendar-location-filter" name="location">
+              <option value="all">Alle Standorte</option>
+              <option value="remote">Remote / Videokonferenz</option>
+              <option value="court">Gericht</option>
+              <option value="office">Kanzlei</option>
+            </select>
+          </div>
+          <div class="calendar-filter calendar-filter--checkbox">
+            <input type="checkbox" id="calendar-focus-critical" name="focusCritical" />
+            <label for="calendar-focus-critical">Nur kritische Termine hervorheben</label>
+          </div>
+        </form>
+
+        <p id="calendar-filter-summary" class="calendar-filter-summary" role="status"></p>
+
+        <div class="calendar-board__content">
+          <section class="calendar-grid-wrapper" aria-labelledby="calendar-grid-title">
+            <h3 id="calendar-grid-title" class="visually-hidden">Kalenderansicht</h3>
+            <div class="calendar-grid" role="grid" aria-readonly="true" id="calendar-grid">
+              <div class="calendar-grid__weekday" role="columnheader">Mo</div>
+              <div class="calendar-grid__weekday" role="columnheader">Di</div>
+              <div class="calendar-grid__weekday" role="columnheader">Mi</div>
+              <div class="calendar-grid__weekday" role="columnheader">Do</div>
+              <div class="calendar-grid__weekday" role="columnheader">Fr</div>
+              <div class="calendar-grid__weekday" role="columnheader">Sa</div>
+              <div class="calendar-grid__weekday" role="columnheader">So</div>
+            </div>
+            <p id="calendar-empty-state" class="calendar-empty-state" hidden>
+              Für diesen Monat liegen keine Termine vor, die den aktuellen Filtern entsprechen.
+            </p>
+          </section>
+
+          <aside class="calendar-sidebar">
+            <section class="calendar-upcoming" aria-labelledby="calendar-upcoming-title">
+              <h3 id="calendar-upcoming-title">Nächste Termine</h3>
+              <ol class="calendar-upcoming__list" id="calendar-upcoming-list"></ol>
+              <p id="calendar-upcoming-empty" class="calendar-upcoming__empty" hidden>
+                Keine passenden Termine in den nächsten 30 Tagen.
+              </p>
+            </section>
+
+            <section class="calendar-detail" aria-labelledby="calendar-detail-title">
+              <h3 id="calendar-detail-title">Termindetails</h3>
+              <div id="calendar-detail-body" class="calendar-detail__body">
+                <p>Wählen Sie einen Termin aus der Kalenderansicht oder der Liste, um Details zu sehen.</p>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details" hidden>
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="application/json" id="calendar-data">
+      [
+        {
+          "id": "event-001",
+          "title": "Gütetermin Arbeitsgericht Berlin",
+          "type": "hearing",
+          "dateTime": "2025-11-07T09:30",
+          "location": "Arbeitsgericht Berlin, Saal 3",
+          "locationType": "court",
+          "caseNumber": "A-2024-017",
+          "client": "Eva Schmidt",
+          "participants": ["RAin Julia König", "Mandantin Eva Schmidt"],
+          "notes": "Vergleichsvorschlag der Gegenseite prüfen"
+        },
+        {
+          "id": "event-002",
+          "title": "Strategiemeeting GreenTech",
+          "type": "meeting",
+          "dateTime": "2025-11-11T14:00",
+          "location": "VeriLex Kanzlei – Raum Konferenz 2",
+          "locationType": "office",
+          "caseNumber": "I-2024-004",
+          "client": "GreenTech Holding",
+          "participants": ["RA Dr. Lukas Stein", "Team M&amp;A"],
+          "notes": "Due-Diligence-Zwischenstand abstimmen"
+        },
+        {
+          "id": "event-003",
+          "title": "Hauptverhandlung Landgericht München",
+          "type": "hearing",
+          "dateTime": "2025-11-18T10:15",
+          "location": "LG München I, Sitzungssaal A 205",
+          "locationType": "court",
+          "caseNumber": "V-2024-001",
+          "client": "Müller GmbH",
+          "participants": ["RA Martin Berger", "Sachverständiger H. Reuter"],
+          "notes": "Zeugenreihenfolge final bestätigen"
+        },
+        {
+          "id": "event-004",
+          "title": "Mandanten-Update Contoso",
+          "type": "meeting",
+          "dateTime": "2025-11-21T09:00",
+          "location": "Videokonferenz (Teams)",
+          "locationType": "remote",
+          "caseNumber": "S-2024-032",
+          "client": "Contoso AG",
+          "participants": ["RAin Laura Seidel", "Steuerteam Contoso"],
+          "notes": "Überprüfung der offenen Behördenrückmeldungen"
+        },
+        {
+          "id": "event-005",
+          "title": "Interne Schulung: Neues Fristen-Tool",
+          "type": "workshop",
+          "dateTime": "2025-11-26T16:00",
+          "location": "VeriLex Kanzlei – Workshopraum",
+          "locationType": "office",
+          "caseNumber": "",
+          "client": "",
+          "participants": ["Alle Teamleitungen"],
+          "notes": "Rollout-Prozess abstimmen"
+        },
+        {
+          "id": "event-006",
+          "title": "Abgabefrist Schriftsatz Weber",
+          "type": "deadline",
+          "dateTime": "2025-11-28T12:00",
+          "location": "VeriLex Kanzlei",
+          "locationType": "office",
+          "caseNumber": "M-2023-089",
+          "client": "Familie Krause",
+          "participants": ["RAin Sophia Brandt"],
+          "notes": "Letzte Abstimmung mit Mandanten am Vortag"
+        },
+        {
+          "id": "event-007",
+          "title": "Erörterungstermin Amtsgericht Hamburg",
+          "type": "hearing",
+          "dateTime": "2025-12-03T11:30",
+          "location": "AG Hamburg, Saal 12",
+          "locationType": "court",
+          "caseNumber": "F-2024-011",
+          "client": "Familie Krause",
+          "participants": ["RAin Sophia Brandt"],
+          "notes": "Reiseplanung &amp; Unterlagencheck bis 01.12."
+        }
+      ]
+    </script>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/calendar.js" type="module"></script>
+  </body>
+</html>
