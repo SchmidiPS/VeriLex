@@ -4945,3 +4945,121 @@ body {
     font-size: 0.7rem;
   }
 }
+
+.auth-main {
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-card {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.auth-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-card__description {
+  margin: 0;
+  color: #4b5563;
+}
+
+.auth-session-info {
+  margin: 0;
+  font-weight: 600;
+  color: #1f3c88;
+}
+
+.auth-form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.auth-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.auth-form__actions--stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.auth-feedback {
+  border-radius: 14px;
+  border: 1px solid rgba(47, 116, 192, 0.2);
+  background: rgba(47, 116, 192, 0.05);
+  padding: 1.25rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-feedback__message {
+  margin: 0;
+  font-weight: 600;
+  color: #1f2933;
+}
+
+.auth-feedback__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.auth-session-summary {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 12px;
+  padding: 1.25rem;
+  background: rgba(15, 23, 42, 0.03);
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-session-summary h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.auth-session-summary dl {
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.auth-session-summary dt {
+  font-weight: 600;
+  color: #1f2933;
+}
+
+.auth-session-summary dd {
+  margin: 0.15rem 0 0;
+  color: #4b5563;
+}
+
+.auth-empty-state {
+  padding: 1rem;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  color: #991b1b;
+  font-weight: 500;
+}
+
+@media (max-width: 600px) {
+  .auth-card {
+    padding: clamp(1.25rem, 4vw, 2.5rem);
+  }
+
+  .auth-form__actions,
+  .auth-feedback__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

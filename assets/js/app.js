@@ -1,54 +1,15 @@
-const ROLE_DEFINITIONS = [
-  {
-    id: 'partner',
-    label: 'Partner:in',
-    description: 'Hat Vollzugriff auf alle Module, inklusive Rechnungs- und Workflow-Themen.',
-  },
-  {
-    id: 'associate',
-    label: 'Associate',
-    description: 'Fokus auf Mandatsbearbeitung, Dokumente und Fristen.',
-  },
-  {
-    id: 'assistant',
-    label: 'Assistenz',
-    description: 'Unterstützt bei Terminen, Dokumenten und Kommunikation.',
-  },
-  {
-    id: 'accounting',
-    label: 'Buchhaltung',
-    description: 'Konzentriert sich auf Rechnungen, offene Posten und Auswertungen.',
-  },
-];
+import {
+  ROLE_DEFINITIONS,
+  getRoleDefinition,
+  readStoredRole,
+  writeStoredRole,
+} from './auth-utils.js';
 
-const ROLE_STORAGE_KEY = 'verilex.activeRole';
 const originalHiddenState = new WeakMap();
 let activeRoleId = null;
-
-function readStoredRole() {
-  try {
-    return localStorage.getItem(ROLE_STORAGE_KEY);
-  } catch (error) {
-    console.warn('Rollenpräferenz konnte nicht gelesen werden.', error);
-    return null;
-  }
-}
-
-function writeStoredRole(roleId) {
-  try {
-    localStorage.setItem(ROLE_STORAGE_KEY, roleId);
-  } catch (error) {
-    console.warn('Rollenpräferenz konnte nicht gespeichert werden.', error);
-  }
-}
-
-function getRoleDefinition(roleId) {
-  const normalized = (roleId ?? '').toString().trim().toLowerCase();
-  return (
-    ROLE_DEFINITIONS.find((role) => role.id === normalized) ??
-    ROLE_DEFINITIONS[0]
-  );
-}
+const disableRoleSelector = document.documentElement.hasAttribute(
+  'data-disable-role-selector'
+);
 
 function parseRoleList(value) {
   if (!value) return [];
@@ -104,10 +65,31 @@ function applyRoleVisibility(requestedRoleId) {
   });
 }
 
+function setRoleAccessApi(selectElement = null) {
+  window.verilexRoleAccess = {
+    getActiveRole: () => activeRoleId,
+    setRole: (roleId) => {
+      const nextRole = getRoleDefinition(roleId).id;
+      activeRoleId = nextRole;
+      writeStoredRole(nextRole);
+      if (selectElement) {
+        selectElement.value = nextRole;
+      }
+      applyRoleVisibility(nextRole);
+    },
+    definitions: ROLE_DEFINITIONS.map((role) => ({ ...role })),
+  };
+}
+
 function createRoleSelector() {
+  if (disableRoleSelector) {
+    return;
+  }
+
   const header = document.querySelector('.app-header');
   if (!header) {
     applyRoleVisibility(activeRoleId ?? ROLE_DEFINITIONS[0].id);
+    setRoleAccessApi();
     return;
   }
 
@@ -158,21 +140,18 @@ function createRoleSelector() {
 
   applyRoleVisibility(initialRole);
 
-  window.verilexRoleAccess = {
-    getActiveRole: () => activeRoleId,
-    setRole: (roleId) => {
-      const nextRole = getRoleDefinition(roleId).id;
-      select.value = nextRole;
-      writeStoredRole(nextRole);
-      applyRoleVisibility(nextRole);
-    },
-    definitions: ROLE_DEFINITIONS.map((role) => ({ ...role })),
-  };
+  setRoleAccessApi(select);
 }
 
 function initRoleAccessControl() {
   const storedRole = readStoredRole();
   activeRoleId = getRoleDefinition(storedRole).id;
+
+  if (disableRoleSelector) {
+    applyRoleVisibility(activeRoleId);
+    setRoleAccessApi();
+    return;
+  }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', createRoleSelector, {
