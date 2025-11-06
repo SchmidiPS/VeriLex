@@ -61,8 +61,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 15. **Workflow-Designer (Mock)** – Implementiere eine einfache Drag-&-Drop-Fläche, auf der Prozess-Kacheln verbunden werden können.
     Status: ✅ erledigt – 2025-11-06
 
-16. **Fristen-Board** – Baue ein farbcodiertes Board mit Fristen (z. B. grün = offen, rot = überfällig).  
-    Status: ⬜
+16. **Fristen-Board** – Baue ein farbcodiertes Board mit Fristen (z. B. grün = offen, rot = überfällig).
+    Status: ✅ erledigt – 2025-11-06
 
 17. **Termin-Kalender** – Erstelle eine Kalenderansicht mit anstehenden Gerichtsterminen oder Besprechungen.  
     Status: ⬜
