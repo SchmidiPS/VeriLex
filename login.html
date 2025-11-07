@@ -24,7 +24,7 @@
           <div>
             <h2 id="login-title">Anmeldung ohne echte Prüfung</h2>
             <p class="auth-card__description">
-              Die Eingaben dienen lediglich der Demo. Wir speichern nur die ausgewählte Rolle und simulieren eine Sitzung,
+              Die Eingaben dienen lediglich der Demo. Wir speichern den angegebenen Namen zusammen mit der gewählten Rolle,
               damit die Rollenansichten auf den Folgeseiten nachvollziehbar bleiben.
             </p>
           </div>
@@ -33,16 +33,16 @@
 
         <form id="login-form" class="auth-form" novalidate>
           <div class="form-field">
-            <label for="login-email">Geschäftliche E-Mail <span aria-hidden="true">*</span></label>
+            <label for="login-name">Name <span aria-hidden="true">*</span></label>
             <input
-              type="email"
-              id="login-email"
-              name="email"
+              type="text"
+              id="login-name"
+              name="name"
               required
-              autocomplete="email"
-              inputmode="email"
-              placeholder="name@kanzlei.de"
+              autocomplete="name"
+              placeholder="Max Mustermann"
             />
+            <p class="form-hint">Im Demo-Modus genügt jeder Name.</p>
           </div>
 
           <div class="form-field">
@@ -52,11 +52,10 @@
               id="login-password"
               name="password"
               required
-              minlength="4"
               autocomplete="current-password"
               placeholder="••••••"
             />
-            <p class="form-hint">Es findet keine echte Authentifizierung statt – jeder Wert ist zulässig.</p>
+            <p class="form-hint">Es findet keine echte Authentifizierung statt – jedes Passwort wird akzeptiert.</p>
           </div>
 
           <div class="form-field">

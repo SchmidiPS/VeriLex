@@ -1,7 +1,9 @@
 import {
   ROLE_DEFINITIONS,
   getRoleDefinition,
+  readMockSession,
   readStoredRole,
+  writeMockSession,
   writeStoredRole,
 } from './auth-utils.js';
 
@@ -10,53 +12,9 @@ let activeRoleId = null;
 const disableRoleSelector = document.documentElement.hasAttribute(
   'data-disable-role-selector'
 );
-
-function insertSecurityBanner() {
-  if (document.querySelector('.security-banner')) {
-    return;
-  }
-
-  const banner = document.createElement('div');
-  banner.className = 'security-banner';
-  banner.setAttribute('role', 'status');
-  banner.setAttribute('aria-live', 'polite');
-
-  const icon = document.createElement('span');
-  icon.className = 'security-banner__icon';
-  icon.setAttribute('aria-hidden', 'true');
-  icon.textContent = '🔒';
-
-  const text = document.createElement('p');
-  text.className = 'security-banner__text';
-
-  const emphasis = document.createElement('strong');
-  emphasis.textContent = 'Sicherheits-Hinweis:';
-
-  text.append(
-    emphasis,
-    ' Diese Demo speichert keine echten Mandantendaten. Alle Eingaben dienen ausschließlich Test- und Schulungszwecken ',
-    'und werden nach einem Neuladen der Seite verworfen.'
-  );
-
-  banner.append(icon, text);
-
-  const header = document.querySelector('.app-header');
-  if (header && header.parentElement) {
-    header.insertAdjacentElement('afterend', banner);
-  } else if (document.body) {
-    document.body.insertBefore(banner, document.body.firstChild ?? null);
-  }
-}
-
-function initSecurityBanner() {
-  const mount = () => insertSecurityBanner();
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', mount, { once: true });
-  } else {
-    mount();
-  }
-}
+let profileControlRoot = null;
+let profileMenuEl = null;
+let profileToggleEl = null;
 
 function parseRoleList(value) {
   if (!value) return [];
@@ -90,7 +48,7 @@ function setNodeVisibility(node, isVisible) {
 }
 
 function updateRoleStatus(roleDefinition) {
-  const statusEl = document.getElementById('role-selector-status');
+  const statusEl = document.getElementById('role-status-message');
   if (statusEl) {
     statusEl.textContent = `Aktive Rolle: ${roleDefinition.label}`;
   }
@@ -112,82 +70,217 @@ function applyRoleVisibility(requestedRoleId) {
   });
 }
 
-function setRoleAccessApi(selectElement = null) {
-  window.verilexRoleAccess = {
-    getActiveRole: () => activeRoleId,
-    setRole: (roleId) => {
-      const nextRole = getRoleDefinition(roleId).id;
-      activeRoleId = nextRole;
-      writeStoredRole(nextRole);
-      if (selectElement) {
-        selectElement.value = nextRole;
-      }
-      applyRoleVisibility(nextRole);
-    },
-    definitions: ROLE_DEFINITIONS.map((role) => ({ ...role })),
-  };
+function handleProfileDocumentClick(event) {
+  if (!profileControlRoot || !profileMenuEl || profileMenuEl.hidden) {
+    return;
+  }
+
+  if (profileControlRoot.contains(event.target)) {
+    return;
+  }
+
+  closeProfileMenu();
 }
 
-function createRoleSelector() {
-  if (disableRoleSelector) {
+function handleProfileDocumentKeydown(event) {
+  if (event.key === 'Escape' && profileMenuEl && !profileMenuEl.hidden) {
+    closeProfileMenu();
+    profileToggleEl?.focus();
+  }
+}
+
+function openProfileMenu() {
+  if (!profileMenuEl) {
     return;
   }
 
+  profileMenuEl.hidden = false;
+  profileToggleEl?.setAttribute('aria-expanded', 'true');
+  document.addEventListener('click', handleProfileDocumentClick);
+  document.addEventListener('keydown', handleProfileDocumentKeydown);
+}
+
+function closeProfileMenu() {
+  if (profileMenuEl) {
+    profileMenuEl.hidden = true;
+  }
+
+  profileToggleEl?.setAttribute('aria-expanded', 'false');
+  document.removeEventListener('click', handleProfileDocumentClick);
+  document.removeEventListener('keydown', handleProfileDocumentKeydown);
+}
+
+function renderProfileControls() {
   const header = document.querySelector('.app-header');
   if (!header) {
-    applyRoleVisibility(activeRoleId ?? ROLE_DEFINITIONS[0].id);
-    setRoleAccessApi();
     return;
   }
 
-  if (header.querySelector('.role-selector')) {
-    return;
+  if (!profileControlRoot) {
+    profileControlRoot = document.createElement('div');
+    profileControlRoot.className = 'profile-control';
+    header.append(profileControlRoot);
   }
 
-  const roleSelector = document.createElement('div');
-  roleSelector.className = 'role-selector';
+  closeProfileMenu();
 
-  const label = document.createElement('label');
-  label.className = 'role-selector__label';
-  label.htmlFor = 'role-selector';
-  label.textContent = 'Rolle';
-
-  const select = document.createElement('select');
-  select.id = 'role-selector';
-  select.className = 'role-selector__input';
-  select.setAttribute('aria-describedby', 'role-selector-status');
-  select.setAttribute('aria-label', 'Aktive Rolle wählen');
-
-  ROLE_DEFINITIONS.forEach((role) => {
-    const option = document.createElement('option');
-    option.value = role.id;
-    option.textContent = role.label;
-    option.title = role.description;
-    select.append(option);
-  });
+  profileControlRoot.innerHTML = '';
 
   const status = document.createElement('p');
-  status.id = 'role-selector-status';
-  status.className = 'role-selector__status';
+  status.id = 'role-status-message';
+  status.className = 'visually-hidden';
   status.setAttribute('role', 'status');
   status.setAttribute('aria-live', 'polite');
+  status.textContent = `Aktive Rolle: ${getRoleDefinition(activeRoleId).label}`;
+  profileControlRoot.append(status);
 
-  const storedRole = readStoredRole();
-  const initialRole = getRoleDefinition(storedRole).id;
-  select.value = initialRole;
+  const session = readMockSession();
 
-  select.addEventListener('change', (event) => {
-    const nextRole = getRoleDefinition(event.target.value).id;
-    writeStoredRole(nextRole);
-    applyRoleVisibility(nextRole);
+  if (!session) {
+    const loginLink = document.createElement('a');
+    loginLink.href = 'login.html';
+    loginLink.className = 'btn btn-secondary profile-login-link';
+    loginLink.textContent = 'Anmelden';
+    profileControlRoot.append(loginLink);
+    profileMenuEl = null;
+    profileToggleEl = null;
+    return;
+  }
+
+  const displayName = session.displayName || session.email || 'Demo-Konto';
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'profile-toggle';
+  toggle.setAttribute('aria-haspopup', 'true');
+  toggle.setAttribute('aria-expanded', 'false');
+
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'profile-toggle__name';
+  nameSpan.textContent = displayName;
+  toggle.append(nameSpan);
+
+  const roleSpan = document.createElement('span');
+  roleSpan.className = 'profile-toggle__role';
+  roleSpan.textContent = getRoleDefinition(activeRoleId).label;
+  toggle.append(roleSpan);
+
+  toggle.addEventListener('click', () => {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    if (expanded) {
+      closeProfileMenu();
+    } else {
+      openProfileMenu();
+    }
   });
 
-  roleSelector.append(label, select, status);
-  header.append(roleSelector);
+  profileControlRoot.append(toggle);
 
-  applyRoleVisibility(initialRole);
+  const menu = document.createElement('div');
+  menu.className = 'profile-menu';
+  menu.setAttribute('role', 'menu');
+  menu.hidden = true;
 
-  setRoleAccessApi(select);
+  const menuHeader = document.createElement('div');
+  menuHeader.className = 'profile-menu__header';
+
+  const userLine = document.createElement('p');
+  userLine.className = 'profile-menu__user';
+  userLine.textContent = displayName;
+  menuHeader.append(userLine);
+
+  const roleLine = document.createElement('p');
+  roleLine.className = 'profile-menu__meta';
+  roleLine.textContent = `Aktive Rolle: ${getRoleDefinition(activeRoleId).label}`;
+  menuHeader.append(roleLine);
+
+  menu.append(menuHeader);
+
+  const roleList = document.createElement('div');
+  roleList.className = 'profile-menu__roles';
+
+  ROLE_DEFINITIONS.forEach((role) => {
+    const roleButton = document.createElement('button');
+    roleButton.type = 'button';
+    roleButton.className = 'profile-menu__role';
+    roleButton.dataset.roleId = role.id;
+    roleButton.setAttribute('role', 'menuitemradio');
+    roleButton.setAttribute(
+      'aria-checked',
+      role.id === activeRoleId ? 'true' : 'false'
+    );
+
+    const label = document.createElement('span');
+    label.className = 'profile-menu__role-label';
+    label.textContent = role.label;
+    roleButton.append(label);
+
+    if (role.id === activeRoleId) {
+      roleButton.classList.add('is-active');
+      const badge = document.createElement('span');
+      badge.className = 'profile-menu__role-badge';
+      badge.textContent = 'Aktiv';
+      roleButton.append(badge);
+    }
+
+    roleButton.addEventListener('click', () => {
+      changeRole(role.id);
+    });
+
+    roleList.append(roleButton);
+  });
+
+  menu.append(roleList);
+
+  const logoutLink = document.createElement('a');
+  logoutLink.className = 'profile-menu__logout';
+  logoutLink.href = 'logout.html';
+  logoutLink.textContent = 'Abmelden';
+  logoutLink.setAttribute('role', 'menuitem');
+  menu.append(logoutLink);
+
+  profileControlRoot.append(menu);
+
+  profileMenuEl = menu;
+  profileToggleEl = toggle;
+}
+
+function refreshRoleDependentUi(requestedRoleId) {
+  applyRoleVisibility(requestedRoleId);
+
+  if (!disableRoleSelector) {
+    renderProfileControls();
+  }
+}
+
+function changeRole(roleId) {
+  const nextRole = getRoleDefinition(roleId).id;
+
+  if (activeRoleId === nextRole) {
+    closeProfileMenu();
+    profileToggleEl?.focus();
+    return;
+  }
+
+  writeStoredRole(nextRole);
+
+  const session = readMockSession();
+  if (session) {
+    writeMockSession({ ...session, roleId: nextRole });
+  }
+
+  refreshRoleDependentUi(nextRole);
+
+  closeProfileMenu();
+  profileToggleEl?.focus();
+}
+
+function setRoleAccessApi() {
+  window.verilexRoleAccess = {
+    getActiveRole: () => activeRoleId,
+    setRole: changeRole,
+    definitions: ROLE_DEFINITIONS.map((role) => ({ ...role })),
+  };
 }
 
 function initRoleAccessControl() {
@@ -201,11 +294,17 @@ function initRoleAccessControl() {
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', createRoleSelector, {
+    document.addEventListener(
+      'DOMContentLoaded',
+      () => {
+        refreshRoleDependentUi(activeRoleId);
+        setRoleAccessApi();
+      },
       once: true,
-    });
+    );
   } else {
-    createRoleSelector();
+    refreshRoleDependentUi(activeRoleId);
+    setRoleAccessApi();
   }
 }
 

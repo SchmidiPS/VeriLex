@@ -25,16 +25,16 @@ function formatDate(isoString) {
 function updateSummary(session) {
   const summary = document.getElementById('logout-session-summary');
   const emptyState = document.getElementById('logout-empty-state');
-  const emailEl = document.getElementById('logout-session-email');
+  const nameEl = document.getElementById('logout-session-name');
   const roleEl = document.getElementById('logout-session-role');
   const createdEl = document.getElementById('logout-session-created');
 
-  if (!summary || !emptyState || !emailEl || !roleEl || !createdEl) {
+  if (!summary || !emptyState || !nameEl || !roleEl || !createdEl) {
     return;
   }
 
   if (session) {
-    emailEl.textContent = session.email ?? 'Unbekannt';
+    nameEl.textContent = session.displayName || session.email || 'Unbekannt';
     roleEl.textContent = getRoleDefinition(session.roleId).label;
     createdEl.textContent = formatDate(session.createdAt);
     summary.hidden = false;

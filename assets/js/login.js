@@ -25,9 +25,10 @@ function formatSessionSummary(session) {
   }
 
   const roleLabel = getRoleDefinition(session.roleId)?.label ?? session.roleId;
+  const displayName = session.displayName || session.email;
   const parts = [];
-  if (session.email) {
-    parts.push(`Aktuell angemeldet als ${session.email}`);
+  if (displayName) {
+    parts.push(`Aktuell angemeldet als ${displayName}`);
   }
   if (roleLabel) {
     parts.push(`Rolle: ${roleLabel}`);
@@ -45,16 +46,16 @@ function handleLoginSubmit(event) {
     return;
   }
 
-  const emailInput = form.querySelector('#login-email');
+  const nameInput = form.querySelector('#login-name');
   const passwordInput = form.querySelector('#login-password');
   const roleSelect = form.querySelector('#login-role');
 
-  const email = emailInput?.value.trim() ?? '';
+  const displayName = nameInput?.value.trim() ?? '';
   const roleId = roleSelect?.value || readStoredRole() || ROLE_DEFINITIONS[0].id;
   const normalizedRole = getRoleDefinition(roleId).id;
 
   const session = {
-    email,
+    displayName,
     roleId: normalizedRole,
     createdAt: new Date().toISOString(),
   };
@@ -66,7 +67,8 @@ function handleLoginSubmit(event) {
   const feedbackMessage = document.getElementById('login-feedback-message');
 
   if (feedback && feedbackMessage) {
-    feedbackMessage.textContent = `Anmeldung erfolgreich. Aktive Rolle: ${getRoleDefinition(normalizedRole).label}.`;
+    const roleLabel = getRoleDefinition(normalizedRole).label;
+    feedbackMessage.textContent = `Anmeldung erfolgreich. ${displayName || 'Demo-Nutzer:in'} ist jetzt als ${roleLabel} aktiv.`;
     feedback.hidden = false;
   }
 
@@ -82,14 +84,14 @@ function handleLoginSubmit(event) {
 
   if (passwordInput) {
     passwordInput.value = '';
+    passwordInput.setAttribute('aria-describedby', 'login-feedback-message');
   }
-
-  passwordInput?.setAttribute('aria-describedby', 'login-feedback-message');
 }
 
 function initLoginForm() {
   const form = document.getElementById('login-form');
   const roleSelect = document.getElementById('login-role');
+  const nameInput = document.getElementById('login-name');
 
   if (!form || !roleSelect) {
     return;
@@ -101,6 +103,10 @@ function initLoginForm() {
   const storedRole = readStoredRole();
   const preferredRoleId = existingSession?.roleId || storedRole || ROLE_DEFINITIONS[0].id;
   roleSelect.value = getRoleDefinition(preferredRoleId).id;
+
+  if (existingSession && nameInput) {
+    nameInput.value = existingSession.displayName || existingSession.email || '';
+  }
 
   const sessionInfo = document.getElementById('login-session-info');
   if (existingSession && sessionInfo) {
