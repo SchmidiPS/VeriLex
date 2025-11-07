@@ -1,54 +1,20 @@
-const ROLE_DEFINITIONS = [
-  {
-    id: 'partner',
-    label: 'Partner:in',
-    description: 'Hat Vollzugriff auf alle Module, inklusive Rechnungs- und Workflow-Themen.',
-  },
-  {
-    id: 'associate',
-    label: 'Associate',
-    description: 'Fokus auf Mandatsbearbeitung, Dokumente und Fristen.',
-  },
-  {
-    id: 'assistant',
-    label: 'Assistenz',
-    description: 'Unterstützt bei Terminen, Dokumenten und Kommunikation.',
-  },
-  {
-    id: 'accounting',
-    label: 'Buchhaltung',
-    description: 'Konzentriert sich auf Rechnungen, offene Posten und Auswertungen.',
-  },
-];
+import {
+  ROLE_DEFINITIONS,
+  getRoleDefinition,
+  readMockSession,
+  readStoredRole,
+  writeMockSession,
+  writeStoredRole,
+} from './auth-utils.js';
 
-const ROLE_STORAGE_KEY = 'verilex.activeRole';
 const originalHiddenState = new WeakMap();
 let activeRoleId = null;
-
-function readStoredRole() {
-  try {
-    return localStorage.getItem(ROLE_STORAGE_KEY);
-  } catch (error) {
-    console.warn('Rollenpräferenz konnte nicht gelesen werden.', error);
-    return null;
-  }
-}
-
-function writeStoredRole(roleId) {
-  try {
-    localStorage.setItem(ROLE_STORAGE_KEY, roleId);
-  } catch (error) {
-    console.warn('Rollenpräferenz konnte nicht gespeichert werden.', error);
-  }
-}
-
-function getRoleDefinition(roleId) {
-  const normalized = (roleId ?? '').toString().trim().toLowerCase();
-  return (
-    ROLE_DEFINITIONS.find((role) => role.id === normalized) ??
-    ROLE_DEFINITIONS[0]
-  );
-}
+const disableRoleSelector = document.documentElement.hasAttribute(
+  'data-disable-role-selector'
+);
+let profileControlRoot = null;
+let profileMenuEl = null;
+let profileToggleEl = null;
 
 function parseRoleList(value) {
   if (!value) return [];
@@ -82,7 +48,7 @@ function setNodeVisibility(node, isVisible) {
 }
 
 function updateRoleStatus(roleDefinition) {
-  const statusEl = document.getElementById('role-selector-status');
+  const statusEl = document.getElementById('role-status-message');
   if (statusEl) {
     statusEl.textContent = `Aktive Rolle: ${roleDefinition.label}`;
   }
@@ -104,68 +70,215 @@ function applyRoleVisibility(requestedRoleId) {
   });
 }
 
-function createRoleSelector() {
+function handleProfileDocumentClick(event) {
+  if (!profileControlRoot || !profileMenuEl || profileMenuEl.hidden) {
+    return;
+  }
+
+  if (profileControlRoot.contains(event.target)) {
+    return;
+  }
+
+  closeProfileMenu();
+}
+
+function handleProfileDocumentKeydown(event) {
+  if (event.key === 'Escape' && profileMenuEl && !profileMenuEl.hidden) {
+    closeProfileMenu();
+    profileToggleEl?.focus();
+  }
+}
+
+function openProfileMenu() {
+  if (!profileMenuEl) {
+    return;
+  }
+
+  profileMenuEl.hidden = false;
+  profileToggleEl?.setAttribute('aria-expanded', 'true');
+  document.addEventListener('click', handleProfileDocumentClick);
+  document.addEventListener('keydown', handleProfileDocumentKeydown);
+}
+
+function closeProfileMenu() {
+  if (profileMenuEl) {
+    profileMenuEl.hidden = true;
+  }
+
+  profileToggleEl?.setAttribute('aria-expanded', 'false');
+  document.removeEventListener('click', handleProfileDocumentClick);
+  document.removeEventListener('keydown', handleProfileDocumentKeydown);
+}
+
+function renderProfileControls() {
   const header = document.querySelector('.app-header');
   if (!header) {
-    applyRoleVisibility(activeRoleId ?? ROLE_DEFINITIONS[0].id);
     return;
   }
 
-  if (header.querySelector('.role-selector')) {
-    return;
+  if (!profileControlRoot) {
+    profileControlRoot = document.createElement('div');
+    profileControlRoot.className = 'profile-control';
+    header.append(profileControlRoot);
   }
 
-  const roleSelector = document.createElement('div');
-  roleSelector.className = 'role-selector';
+  closeProfileMenu();
 
-  const label = document.createElement('label');
-  label.className = 'role-selector__label';
-  label.htmlFor = 'role-selector';
-  label.textContent = 'Rolle';
-
-  const select = document.createElement('select');
-  select.id = 'role-selector';
-  select.className = 'role-selector__input';
-  select.setAttribute('aria-describedby', 'role-selector-status');
-  select.setAttribute('aria-label', 'Aktive Rolle wählen');
-
-  ROLE_DEFINITIONS.forEach((role) => {
-    const option = document.createElement('option');
-    option.value = role.id;
-    option.textContent = role.label;
-    option.title = role.description;
-    select.append(option);
-  });
+  profileControlRoot.innerHTML = '';
 
   const status = document.createElement('p');
-  status.id = 'role-selector-status';
-  status.className = 'role-selector__status';
+  status.id = 'role-status-message';
+  status.className = 'visually-hidden';
   status.setAttribute('role', 'status');
   status.setAttribute('aria-live', 'polite');
+  status.textContent = `Aktive Rolle: ${getRoleDefinition(activeRoleId).label}`;
+  profileControlRoot.append(status);
 
-  const storedRole = readStoredRole();
-  const initialRole = getRoleDefinition(storedRole).id;
-  select.value = initialRole;
+  const session = readMockSession();
 
-  select.addEventListener('change', (event) => {
-    const nextRole = getRoleDefinition(event.target.value).id;
-    writeStoredRole(nextRole);
-    applyRoleVisibility(nextRole);
+  if (!session) {
+    const loginLink = document.createElement('a');
+    loginLink.href = 'login.html';
+    loginLink.className = 'btn btn-secondary profile-login-link';
+    loginLink.textContent = 'Anmelden';
+    profileControlRoot.append(loginLink);
+    profileMenuEl = null;
+    profileToggleEl = null;
+    return;
+  }
+
+  const displayName = session.displayName || session.email || 'Demo-Konto';
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'profile-toggle';
+  toggle.setAttribute('aria-haspopup', 'true');
+  toggle.setAttribute('aria-expanded', 'false');
+
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'profile-toggle__name';
+  nameSpan.textContent = displayName;
+  toggle.append(nameSpan);
+
+  const roleSpan = document.createElement('span');
+  roleSpan.className = 'profile-toggle__role';
+  roleSpan.textContent = getRoleDefinition(activeRoleId).label;
+  toggle.append(roleSpan);
+
+  toggle.addEventListener('click', () => {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    if (expanded) {
+      closeProfileMenu();
+    } else {
+      openProfileMenu();
+    }
   });
 
-  roleSelector.append(label, select, status);
-  header.append(roleSelector);
+  profileControlRoot.append(toggle);
 
-  applyRoleVisibility(initialRole);
+  const menu = document.createElement('div');
+  menu.className = 'profile-menu';
+  menu.setAttribute('role', 'menu');
+  menu.hidden = true;
 
+  const menuHeader = document.createElement('div');
+  menuHeader.className = 'profile-menu__header';
+
+  const userLine = document.createElement('p');
+  userLine.className = 'profile-menu__user';
+  userLine.textContent = displayName;
+  menuHeader.append(userLine);
+
+  const roleLine = document.createElement('p');
+  roleLine.className = 'profile-menu__meta';
+  roleLine.textContent = `Aktive Rolle: ${getRoleDefinition(activeRoleId).label}`;
+  menuHeader.append(roleLine);
+
+  menu.append(menuHeader);
+
+  const roleList = document.createElement('div');
+  roleList.className = 'profile-menu__roles';
+
+  ROLE_DEFINITIONS.forEach((role) => {
+    const roleButton = document.createElement('button');
+    roleButton.type = 'button';
+    roleButton.className = 'profile-menu__role';
+    roleButton.dataset.roleId = role.id;
+    roleButton.setAttribute('role', 'menuitemradio');
+    roleButton.setAttribute(
+      'aria-checked',
+      role.id === activeRoleId ? 'true' : 'false'
+    );
+
+    const label = document.createElement('span');
+    label.className = 'profile-menu__role-label';
+    label.textContent = role.label;
+    roleButton.append(label);
+
+    if (role.id === activeRoleId) {
+      roleButton.classList.add('is-active');
+      const badge = document.createElement('span');
+      badge.className = 'profile-menu__role-badge';
+      badge.textContent = 'Aktiv';
+      roleButton.append(badge);
+    }
+
+    roleButton.addEventListener('click', () => {
+      changeRole(role.id);
+    });
+
+    roleList.append(roleButton);
+  });
+
+  menu.append(roleList);
+
+  const logoutLink = document.createElement('a');
+  logoutLink.className = 'profile-menu__logout';
+  logoutLink.href = 'logout.html';
+  logoutLink.textContent = 'Abmelden';
+  logoutLink.setAttribute('role', 'menuitem');
+  menu.append(logoutLink);
+
+  profileControlRoot.append(menu);
+
+  profileMenuEl = menu;
+  profileToggleEl = toggle;
+}
+
+function refreshRoleDependentUi(requestedRoleId) {
+  applyRoleVisibility(requestedRoleId);
+
+  if (!disableRoleSelector) {
+    renderProfileControls();
+  }
+}
+
+function changeRole(roleId) {
+  const nextRole = getRoleDefinition(roleId).id;
+
+  if (activeRoleId === nextRole) {
+    closeProfileMenu();
+    profileToggleEl?.focus();
+    return;
+  }
+
+  writeStoredRole(nextRole);
+
+  const session = readMockSession();
+  if (session) {
+    writeMockSession({ ...session, roleId: nextRole });
+  }
+
+  refreshRoleDependentUi(nextRole);
+
+  closeProfileMenu();
+  profileToggleEl?.focus();
+}
+
+function setRoleAccessApi() {
   window.verilexRoleAccess = {
     getActiveRole: () => activeRoleId,
-    setRole: (roleId) => {
-      const nextRole = getRoleDefinition(roleId).id;
-      select.value = nextRole;
-      writeStoredRole(nextRole);
-      applyRoleVisibility(nextRole);
-    },
+    setRole: changeRole,
     definitions: ROLE_DEFINITIONS.map((role) => ({ ...role })),
   };
 }
@@ -174,12 +287,24 @@ function initRoleAccessControl() {
   const storedRole = readStoredRole();
   activeRoleId = getRoleDefinition(storedRole).id;
 
+  if (disableRoleSelector) {
+    applyRoleVisibility(activeRoleId);
+    setRoleAccessApi();
+    return;
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', createRoleSelector, {
+    document.addEventListener(
+      'DOMContentLoaded',
+      () => {
+        refreshRoleDependentUi(activeRoleId);
+        setRoleAccessApi();
+      },
       once: true,
-    });
+    );
   } else {
-    createRoleSelector();
+    refreshRoleDependentUi(activeRoleId);
+    setRoleAccessApi();
   }
 }
 

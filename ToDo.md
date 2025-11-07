@@ -70,8 +70,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 18. **Rollen-basierte UI-Sichtbarkeit** – Passe bestehende Seiten/Module so an, dass sie je nach aktuell angemeldeter Rolle angezeigt oder verborgen werden. Für den Mock reicht eine Dropdown-Auswahl.
     Status: ✅ erledigt – 2025-11-06
 
-19. **Login-/Logout-Seiten** – Implementiere einfache Anmelde- und Abmelde-Seiten (Mock-Zustand). Keine echte Authentifizierung nötig.  
-    Status: ⬜
+19. **Login-/Logout-Seiten** – Implementiere einfache Anmelde- und Abmelde-Seiten (Mock-Zustand). Keine echte Authentifizierung nötig.
+    Status: ✅ erledigt – 2025-11-06
 
 20. **Sicherheits-Hinweisbanner** – Zeige ein Banner, dass die Demo keine echten Daten speichert und nur zu Testzwecken dient.  
     Status: ⬜

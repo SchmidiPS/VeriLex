@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="de" data-disable-role-selector>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Abmeldung</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>VeriLex Demo-Logout</h1>
+      <p class="app-subtitle">
+        Beenden Sie die Mock-Sitzung, um die Oberfläche aus Sicht eines abgemeldeten Nutzers zu testen.
+      </p>
+      <div class="welcome-actions">
+        <a class="btn btn-secondary" href="index.html">Zur Startseite</a>
+        <a class="btn btn-secondary" href="login.html">Zum Login</a>
+      </div>
+    </header>
+
+    <main class="app-main auth-main" aria-live="polite">
+      <section class="app-card auth-card" aria-labelledby="logout-title">
+        <div class="auth-card__header">
+          <div>
+            <h2 id="logout-title">Sitzung verwalten</h2>
+            <p class="auth-card__description">
+              Ein Klick genügt, um alle gespeicherten Demo-Daten der Sitzung zu entfernen. Beim erneuten Login können Sie eine
+              neue Rolle auswählen.
+            </p>
+          </div>
+        </div>
+
+        <div id="logout-session-summary" class="auth-session-summary" hidden>
+          <h3>Aktuelle Mock-Sitzung</h3>
+          <dl>
+            <div>
+              <dt>Name</dt>
+              <dd id="logout-session-name">–</dd>
+            </div>
+            <div>
+              <dt>Rolle</dt>
+              <dd id="logout-session-role">–</dd>
+            </div>
+            <div>
+              <dt>Aktiv seit</dt>
+              <dd id="logout-session-created">–</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div id="logout-empty-state" class="auth-empty-state" role="status" aria-live="polite" hidden>
+          Es ist derzeit keine Demo-Sitzung aktiv.
+        </div>
+
+        <div class="auth-form__actions auth-form__actions--stacked">
+          <button type="button" id="logout-button" class="btn btn-primary">Jetzt abmelden</button>
+          <a class="btn btn-secondary" href="login.html">Zurück zum Login</a>
+        </div>
+
+        <div id="logout-feedback" class="auth-feedback" role="status" aria-live="polite" hidden>
+          <div class="auth-feedback__message" id="logout-feedback-message"></div>
+          <div class="auth-feedback__actions">
+            <a class="btn btn-primary" href="login.html">Erneut anmelden</a>
+            <a class="btn btn-secondary" href="index.html">Demo ohne Login ansehen</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details">
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/logout.js" type="module"></script>
+  </body>
+</html>
