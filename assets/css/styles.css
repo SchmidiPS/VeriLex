@@ -293,6 +293,26 @@ body {
   gap: clamp(1rem, 3vw, 2rem);
 }
 
+.performance-overview__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: clamp(160px, 20vw, 220px);
+}
+
+.performance-overview__actions .btn {
+  align-self: flex-end;
+}
+
+.performance-overview__actions-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #4b5563;
+  max-width: 22ch;
+  text-align: right;
+}
+
 .performance-overview__description {
   margin: 0.35rem 0 0;
   max-width: 60ch;
@@ -2311,6 +2331,18 @@ body {
 
   .performance-overview__header {
     flex-direction: column;
+  }
+
+  .performance-overview__actions {
+    align-items: stretch;
+  }
+
+  .performance-overview__actions .btn {
+    align-self: stretch;
+  }
+
+  .performance-overview__actions-hint {
+    text-align: left;
   }
 
   .performance-filters {

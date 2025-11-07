@@ -76,8 +76,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 20. **Sicherheits-Hinweisbanner** – Zeige ein Banner, dass die Demo keine echten Daten speichert und nur zu Testzwecken dient.
     Status: ✅ erledigt – 2025-11-07
 
-21. **Datenexport (CSV-Mock)** – Füge eine Exportfunktion hinzu, um Demo-Daten als CSV herunterzuladen.  
-    Status: ⬜
+21. **Datenexport (CSV-Mock)** – Füge eine Exportfunktion hinzu, um Demo-Daten als CSV herunterzuladen.
+    Status: ✅ erledigt – 2025-11-07
 
 22. **Mandantenportal-Startseite** – Baue eine Mock-Seite, auf der Mandanten Dokumente sehen oder hochladen können (Platzhalter).  
     Status: ⬜
