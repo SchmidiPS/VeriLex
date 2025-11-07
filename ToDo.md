@@ -73,8 +73,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 19. **Login-/Logout-Seiten** – Implementiere einfache Anmelde- und Abmelde-Seiten (Mock-Zustand). Keine echte Authentifizierung nötig.
     Status: ✅ erledigt – 2025-11-06
 
-20. **Sicherheits-Hinweisbanner** – Zeige ein Banner, dass die Demo keine echten Daten speichert und nur zu Testzwecken dient.  
-    Status: ⬜
+20. **Sicherheits-Hinweisbanner** – Zeige ein Banner, dass die Demo keine echten Daten speichert und nur zu Testzwecken dient.
+    Status: ✅ erledigt – 2025-11-07
 
 21. **Datenexport (CSV-Mock)** – Füge eine Exportfunktion hinzu, um Demo-Daten als CSV herunterzuladen.  
     Status: ⬜
