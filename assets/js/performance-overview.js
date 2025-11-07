@@ -12,9 +12,11 @@ const totalDurationEl = document.getElementById('overview-total-duration');
 const averageDurationEl = document.getElementById('overview-average-duration');
 const breakdownList = document.getElementById('performance-breakdown-list');
 const breakdownSummary = document.getElementById('performance-breakdown-summary');
+const exportButton = document.getElementById('performance-export-button');
 
 let rawEntries = [];
 let caseMetadata = [];
+let lastFilteredEntries = [];
 
 function parseCaseData() {
   const dataElement = document.getElementById('performance-case-data');
@@ -127,9 +129,31 @@ function formatDuration(ms, withSeconds = true) {
   return `${hours}:${minutes}:${seconds}`;
 }
 
+function formatDurationForCsv(ms) {
+  const totalMinutes = Math.max(0, Math.round(ms / 60000));
+  const hours = Math.floor(totalMinutes / 60)
+    .toString()
+    .padStart(2, '0');
+  const minutes = Math.floor(totalMinutes % 60)
+    .toString()
+    .padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
 function formatDateTime(date) {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
     return 'Unbekannt';
+  }
+
+  return new Intl.DateTimeFormat('de-DE', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+function formatDateTimeForCsv(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return '';
   }
 
   return new Intl.DateTimeFormat('de-DE', {
@@ -337,9 +361,102 @@ function render() {
   const normalized = getNormalizedEntries();
   populateClientFilter(normalized);
   const filtered = applyFilters(normalized);
+  lastFilteredEntries = filtered.slice();
   renderSummary(filtered);
   renderBreakdown(filtered);
   renderTable(filtered);
+  updateExportButtonState(filtered);
+}
+
+function toCsvValue(value) {
+  const normalized = value ?? '';
+  const stringValue = typeof normalized === 'string' ? normalized : String(normalized);
+  return `"${stringValue.replace(/"/g, '""')}"`;
+}
+
+function createCsvContent(entries) {
+  const header = [
+    'Tätigkeit',
+    'Mandant',
+    'Aktennummer',
+    'Aktenbezeichnung',
+    'Start (lokal)',
+    'Ende (lokal)',
+    'Dauer (hh:mm)',
+    'Notiz',
+  ];
+
+  const rows = entries.map((entry) => [
+    entry.activity,
+    entry.clientName,
+    entry.caseNumber || '',
+    entry.caseTitle || '',
+    formatDateTimeForCsv(entry.startedAt),
+    formatDateTimeForCsv(entry.endedAt),
+    formatDurationForCsv(entry.durationMs),
+    entry.notes || '',
+  ]);
+
+  return [header, ...rows]
+    .map((row) => row.map((cell) => toCsvValue(cell)).join(';'))
+    .join('\r\n');
+}
+
+function triggerCsvDownload(content) {
+  const blob = new Blob(['\ufeff', content], {
+    type: 'text/csv;charset=utf-8;',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const today = new Date();
+  const fileDate = today.toISOString().split('T')[0];
+  link.href = url;
+  link.download = `verilex-leistungsdaten-${fileDate}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 0);
+}
+
+function updateExportButtonState(entries) {
+  if (!exportButton) {
+    return;
+  }
+
+  const hasEntries = Array.isArray(entries) && entries.length > 0;
+  exportButton.disabled = !hasEntries;
+
+  if (hasEntries) {
+    exportButton.removeAttribute('aria-disabled');
+    exportButton.title = 'Aktuelle Leistungsdaten als CSV herunterladen';
+  } else {
+    exportButton.setAttribute('aria-disabled', 'true');
+    exportButton.title = 'Es sind keine Daten für den Export vorhanden.';
+  }
+}
+
+function handleExportClick() {
+  if (!Array.isArray(lastFilteredEntries) || lastFilteredEntries.length === 0) {
+    overlayInstance?.show?.({
+      title: 'Keine Daten für den Export',
+      message: 'Für die aktuelle Filterauswahl konnten keine Einträge gefunden werden.',
+    });
+    return;
+  }
+
+  try {
+    const csvContent = createCsvContent(lastFilteredEntries);
+    triggerCsvDownload(csvContent);
+  } catch (error) {
+    console.error('CSV-Export fehlgeschlagen.', error);
+    overlayInstance?.show?.({
+      title: 'CSV-Export fehlgeschlagen',
+      message: 'Die Leistungsdaten konnten nicht exportiert werden.',
+      details: error,
+    });
+  }
 }
 
 function init() {
@@ -381,6 +498,8 @@ function init() {
     loadEntries();
     render();
   });
+
+  exportButton?.addEventListener('click', handleExportClick);
 }
 
 init();

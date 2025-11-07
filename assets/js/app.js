@@ -308,6 +308,7 @@ function initRoleAccessControl() {
   }
 }
 
+initSecurityBanner();
 initRoleAccessControl();
 
 class GlobalErrorOverlay {
