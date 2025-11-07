@@ -46,6 +46,20 @@
               <dd id="overview-average-duration">00:00 h</dd>
             </div>
           </dl>
+          <div class="performance-overview__actions" role="group" aria-label="Aktionen für Leistungsdaten">
+            <button
+              type="button"
+              class="btn"
+              id="performance-export-button"
+              aria-describedby="performance-export-hint"
+              title="Aktuelle Leistungsdaten als CSV herunterladen"
+            >
+              CSV-Export
+            </button>
+            <p id="performance-export-hint" class="performance-overview__actions-hint">
+              Lädt die aktuelle Filterauswahl als CSV-Datei herunter.
+            </p>
+          </div>
         </header>
 
         <form class="performance-filters" aria-label="Leistungsdaten filtern" novalidate>
