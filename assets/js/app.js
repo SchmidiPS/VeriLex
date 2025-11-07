@@ -11,6 +11,53 @@ const disableRoleSelector = document.documentElement.hasAttribute(
   'data-disable-role-selector'
 );
 
+function insertSecurityBanner() {
+  if (document.querySelector('.security-banner')) {
+    return;
+  }
+
+  const banner = document.createElement('div');
+  banner.className = 'security-banner';
+  banner.setAttribute('role', 'status');
+  banner.setAttribute('aria-live', 'polite');
+
+  const icon = document.createElement('span');
+  icon.className = 'security-banner__icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.textContent = '🔒';
+
+  const text = document.createElement('p');
+  text.className = 'security-banner__text';
+
+  const emphasis = document.createElement('strong');
+  emphasis.textContent = 'Sicherheits-Hinweis:';
+
+  text.append(
+    emphasis,
+    ' Diese Demo speichert keine echten Mandantendaten. Alle Eingaben dienen ausschließlich Test- und Schulungszwecken ',
+    'und werden nach einem Neuladen der Seite verworfen.'
+  );
+
+  banner.append(icon, text);
+
+  const header = document.querySelector('.app-header');
+  if (header && header.parentElement) {
+    header.insertAdjacentElement('afterend', banner);
+  } else if (document.body) {
+    document.body.insertBefore(banner, document.body.firstChild ?? null);
+  }
+}
+
+function initSecurityBanner() {
+  const mount = () => insertSecurityBanner();
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mount, { once: true });
+  } else {
+    mount();
+  }
+}
+
 function parseRoleList(value) {
   if (!value) return [];
   return value
@@ -162,6 +209,7 @@ function initRoleAccessControl() {
   }
 }
 
+initSecurityBanner();
 initRoleAccessControl();
 
 class GlobalErrorOverlay {
