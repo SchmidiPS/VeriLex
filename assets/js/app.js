@@ -16,6 +16,18 @@ let profileControlRoot = null;
 let profileMenuEl = null;
 let profileToggleEl = null;
 
+const NAVIGATION_LINKS = [
+  { label: 'Start', href: 'index.html', roles: ['all'] },
+  { label: 'Dashboard', href: 'dashboard.html', roles: ['all'] },
+  { label: 'Mandats-Wizard', href: 'mandate-wizard.html', roles: ['partner', 'associate'] },
+  { label: 'Dokumente', href: 'document-management.html', roles: ['partner', 'associate', 'assistant'] },
+  { label: 'Mandantenportal', href: 'mandantenportal.html', roles: ['all'] },
+  { label: 'Zeiterfassung', href: 'time-tracking.html', roles: ['partner', 'associate', 'assistant'] },
+  { label: 'Rechnungen', href: 'invoice-wizard.html', roles: ['partner', 'accounting'] },
+  { label: 'Offene Posten', href: 'open-items.html', roles: ['partner', 'accounting'] },
+  { label: 'Workflow', href: 'workflow-designer.html', roles: ['partner'] }
+];
+
 function parseRoleList(value) {
   if (!value) return [];
   return value
@@ -45,6 +57,85 @@ function setNodeVisibility(node, isVisible) {
       node.removeAttribute('hidden');
     }
   }
+}
+
+function initializeNavigation() {
+  const header = document.querySelector('.app-header');
+  if (!header || header.querySelector('.app-navigation')) {
+    return;
+  }
+
+  const nav = document.createElement('nav');
+  nav.className = 'app-navigation';
+  nav.setAttribute('aria-label', 'Hauptnavigation');
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'app-navigation__toggle';
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.setAttribute('aria-controls', 'app-navigation-menu');
+  toggle.innerHTML =
+    '<span class="app-navigation__toggle-icon" aria-hidden="true">☰</span><span class="visually-hidden">Menü</span>';
+
+  const menu = document.createElement('ul');
+  menu.className = 'app-navigation__menu';
+  menu.id = 'app-navigation-menu';
+
+  const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+
+  NAVIGATION_LINKS.forEach((link) => {
+    const item = document.createElement('li');
+    item.className = 'app-navigation__item';
+
+    const anchor = document.createElement('a');
+    anchor.className = 'app-navigation__link';
+    anchor.href = link.href;
+    anchor.textContent = link.label;
+    anchor.dataset.visibleFor = (link.roles ?? ['all']).join(',');
+
+    if (link.href === currentPath) {
+      anchor.setAttribute('aria-current', 'page');
+    }
+
+    item.append(anchor);
+    menu.append(item);
+  });
+
+  nav.append(toggle);
+  nav.append(menu);
+  header.append(nav);
+
+  const closeMenu = () => {
+    nav.classList.remove('app-navigation--open');
+    toggle.setAttribute('aria-expanded', 'false');
+  };
+
+  const openMenu = () => {
+    nav.classList.add('app-navigation--open');
+    toggle.setAttribute('aria-expanded', 'true');
+  };
+
+  toggle.addEventListener('click', () => {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    if (expanded) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  });
+
+  menu.addEventListener('click', (event) => {
+    if (event.target.closest('.app-navigation__link')) {
+      closeMenu();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && nav.classList.contains('app-navigation--open')) {
+      closeMenu();
+      toggle.focus();
+    }
+  });
 }
 
 function updateRoleStatus(roleDefinition) {
@@ -309,6 +400,7 @@ function initRoleAccessControl() {
 }
 
 initSecurityBanner();
+initializeNavigation();
 initRoleAccessControl();
 
 class GlobalErrorOverlay {
@@ -676,5 +768,21 @@ function initCaseDirectory() {
 }
 
 initCaseDirectory();
+
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('service-worker.js')
+      .catch((error) => {
+        console.error('Service Worker registration failed', error);
+      });
+  });
+}
+
+registerServiceWorker();
 
 export { GlobalErrorOverlay, overlayInstance };

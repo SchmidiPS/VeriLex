@@ -82,14 +82,14 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 22. **Mandantenportal-Startseite** – Baue eine Mock-Seite, auf der Mandanten Dokumente sehen oder hochladen können (Platzhalter).
     Status: ✅ erledigt – 2025-11-10
 
-23. **PWA-Grundstruktur** – Füge `manifest.json` und Service Worker hinzu, um eine PWA-Installation zu ermöglichen.  
-    Status: ⬜
+23. **PWA-Grundstruktur** – Füge `manifest.json` und Service Worker hinzu, um eine PWA-Installation zu ermöglichen.
+    Status: ✅ erledigt – 2025-11-10
 
-24. **Navigation & Menü** – Implementiere ein responsives Navigationsmenü mit Hamburger-Button.  
-    Status: ⬜
+24. **Navigation & Menü** – Implementiere ein responsives Navigationsmenü mit Hamburger-Button.
+    Status: ✅ erledigt – 2025-11-10
 
-25. **Dashboard-Übersicht** – Erstelle ein Dashboard mit Platzhalter-Diagrammen für Akten, Leistungen und Rechnungen.  
-    Status: ⬜
+25. **Dashboard-Übersicht** – Erstelle ein Dashboard mit Platzhalter-Diagrammen für Akten, Leistungen und Rechnungen.
+    Status: ✅ erledigt – 2025-11-10
 
 26. **KI-Assistent (Mock)** – Integriere einen Chat-Bereich, der einfache Platzhalter-Antworten liefert.  
     Status: ⬜
