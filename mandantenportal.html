@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Mandantenportal</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>VeriLex Demo</h1>
+      <p class="app-subtitle">Mandantenportal</p>
+    </header>
+
+    <main class="app-main client-portal-main" aria-live="polite">
+      <section class="app-card client-portal-hero" aria-labelledby="client-portal-heading">
+        <div class="client-portal-hero__header">
+          <h2 id="client-portal-heading">Mandantenportal</h2>
+          <p id="client-portal-summary" class="client-portal-hero__summary">
+            Behalten Sie Dokumente, Aufgaben und Nachrichten Ihrer laufenden Mandate im Blick.
+          </p>
+        </div>
+
+        <div class="client-portal-metrics" role="list" aria-label="Aktuelle Kennzahlen">
+          <article class="client-portal-metric" role="listitem">
+            <span class="client-portal-metric__label">Neue Dokumente</span>
+            <span class="client-portal-metric__value" id="client-metric-new-docs">–</span>
+            <span class="client-portal-metric__hint">seit Ihrer letzten Anmeldung</span>
+          </article>
+          <article class="client-portal-metric" role="listitem">
+            <span class="client-portal-metric__label">Offene Aufgaben</span>
+            <span class="client-portal-metric__value" id="client-metric-open-tasks">–</span>
+            <span class="client-portal-metric__hint">zu bestätigende Schritte</span>
+          </article>
+          <article class="client-portal-metric" role="listitem">
+            <span class="client-portal-metric__label">Geteilte Dateien</span>
+            <span class="client-portal-metric__value" id="client-metric-doc-count">–</span>
+            <span class="client-portal-metric__hint">bereitgestellte Unterlagen</span>
+          </article>
+        </div>
+
+        <div class="client-portal-quick-actions">
+          <a class="btn btn-primary" href="#client-document-section">Zu den Dokumenten</a>
+          <a class="btn btn-secondary" href="#client-upload-section">Unterlagen hochladen</a>
+          <a class="btn btn-secondary" href="#client-activity-section">Aktivitäten ansehen</a>
+        </div>
+      </section>
+
+      <section class="client-portal-grid" aria-label="Mandantenportal-Inhalte">
+        <article
+          class="app-card client-document-section"
+          id="client-document-section"
+          aria-labelledby="client-document-title"
+        >
+          <header class="client-document-header">
+            <div>
+              <h2 id="client-document-title">Geteilte Dokumente</h2>
+              <p class="client-document-description">
+                Alle Unterlagen, die Ihr Kanzleiteam für Sie freigegeben hat.
+              </p>
+            </div>
+            <label class="client-document-search">
+              <span class="visually-hidden" id="client-document-search-label">Dokumente durchsuchen</span>
+              <input
+                id="client-document-search"
+                type="search"
+                name="documentSearch"
+                placeholder="Nach Titel oder Typ suchen"
+                autocomplete="off"
+                spellcheck="false"
+                aria-labelledby="client-document-search-label"
+                aria-describedby="client-document-result"
+              />
+            </label>
+          </header>
+
+          <div class="client-document-filters" role="toolbar" aria-label="Dokumentenfilter">
+            <button type="button" class="timeline-filter" data-document-filter="all" aria-pressed="true">
+              Alle
+            </button>
+            <button type="button" class="timeline-filter" data-document-filter="action">
+              Benötigt Aktion
+            </button>
+            <button type="button" class="timeline-filter" data-document-filter="review">
+              In Prüfung
+            </button>
+            <button type="button" class="timeline-filter" data-document-filter="completed">
+              Bereitgestellt
+            </button>
+          </div>
+
+          <p id="client-document-result" class="client-document-result" role="status" aria-live="polite"></p>
+
+          <p
+            id="client-document-feedback"
+            class="client-document-feedback"
+            role="status"
+            aria-live="assertive"
+            data-state="hidden"
+          ></p>
+
+          <ul id="client-document-list" class="client-document-list" role="list"></ul>
+          <p id="client-document-empty" class="client-document-empty" hidden>
+            In diesem Filter stehen derzeit keine Dokumente zur Verfügung.
+          </p>
+        </article>
+
+        <article
+          class="app-card client-task-section"
+          aria-labelledby="client-task-title"
+          id="client-task-section"
+        >
+          <header class="client-task-header">
+            <div>
+              <h2 id="client-task-title">Ihre nächsten Schritte</h2>
+              <p class="client-task-description">
+                Stimmen Sie Unterlagen ab oder liefern Sie angeforderte Informationen nach.
+              </p>
+            </div>
+            <p id="client-task-progress" class="client-task-progress" role="status" aria-live="polite"></p>
+          </header>
+
+          <ul id="client-task-list" class="client-task-list"></ul>
+          <p id="client-task-empty" class="client-task-empty" hidden>
+            Großartig – alle Aufgaben sind erledigt. Wir melden uns, sobald neue Schritte anstehen.
+          </p>
+        </article>
+
+        <article
+          class="app-card client-upload-section"
+          id="client-upload-section"
+          aria-labelledby="client-upload-title"
+        >
+          <header class="client-upload-header">
+            <h2 id="client-upload-title">Unterlagen sicher hochladen</h2>
+            <p class="client-upload-description">
+              Ziehen Sie Dateien in die Upload-Zone oder wählen Sie sie aus. Das Kanzleiteam wird automatisch informiert.
+            </p>
+          </header>
+
+          <form id="client-upload-form" class="client-upload-form" novalidate>
+            <div
+              id="client-upload-dropzone"
+              class="client-upload-dropzone"
+              role="button"
+              tabindex="0"
+              aria-describedby="client-upload-hint"
+              aria-label="Dateien hochladen"
+            >
+              <div class="client-upload-dropzone__icon" aria-hidden="true">⬆</div>
+              <p class="client-upload-dropzone__title">Dateien hierher ziehen oder auswählen</p>
+              <p id="client-upload-hint" class="client-upload-dropzone__hint">
+                Unterstützt werden PDF, Office-Dokumente und Bilder. Maximal 10 Dateien pro Upload.
+              </p>
+              <div class="client-upload-dropzone__actions">
+                <button type="button" class="btn btn-primary btn-small" id="client-upload-select">
+                  Dateien auswählen
+                </button>
+                <button type="button" class="btn btn-secondary btn-small" id="client-upload-reset">
+                  Auswahl löschen
+                </button>
+              </div>
+              <input
+                type="file"
+                id="client-upload-input"
+                class="client-upload-input"
+                hidden
+                multiple
+                aria-hidden="true"
+                tabindex="-1"
+              />
+            </div>
+
+            <div id="client-upload-preview" class="client-upload-preview" role="list"></div>
+
+            <div class="client-upload-footer">
+              <button type="submit" class="btn btn-primary">Upload an Kanzlei senden</button>
+              <p
+                id="client-upload-feedback"
+                class="client-upload-feedback"
+                role="status"
+                aria-live="assertive"
+                data-state="hidden"
+              ></p>
+            </div>
+          </form>
+        </article>
+
+        <article
+          class="app-card client-activity-section"
+          id="client-activity-section"
+          aria-labelledby="client-activity-title"
+        >
+          <header class="client-activity-header">
+            <div>
+              <h2 id="client-activity-title">Aktuelle Aktivitäten</h2>
+              <p class="client-activity-description">
+                Alle Nachrichten, Statusmeldungen und Uploads werden hier chronologisch aufgelistet.
+              </p>
+            </div>
+          </header>
+
+          <ul id="client-activity-list" class="timeline-list" role="list"></ul>
+          <p id="client-activity-empty" class="timeline-empty" hidden>
+            Noch keine Aktivitäten vorhanden. Änderungen werden hier automatisch erscheinen.
+          </p>
+        </article>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details" hidden>
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="application/json" id="client-portal-seed">
+      {
+        "clientName": "Muster GmbH",
+        "caseReference": "AZ 2025/078",
+        "documents": [
+          {
+            "id": "doc-az-vergleich",
+            "title": "Vergleichsentwurf – Stand 05.11.2025",
+            "description": "Bitte prüfen Sie den Entwurf und teilen Sie uns Ihre finale Freigabe bis zum 12.11. mit.",
+            "status": "action_required",
+            "category": "Vergleich",
+            "updatedAt": "2025-11-05T09:30:00+01:00",
+            "size": 262144,
+            "tags": ["Feedback offen", "Vertrag"],
+            "downloadUrl": "assets/mock/verilex-demo.pdf"
+          },
+          {
+            "id": "doc-az-kostenaufstellung",
+            "title": "Kostenaufstellung Q3",
+            "description": "Übersicht über angefallene Gebühren und Auslagen. Rein zur Information.",
+            "status": "review",
+            "category": "Abrechnung",
+            "updatedAt": "2025-11-02T14:15:00+01:00",
+            "size": 196608,
+            "tags": ["Transparenz", "Kosten"],
+            "downloadUrl": "assets/mock/verilex-demo.pdf"
+          },
+          {
+            "id": "doc-az-protokoll",
+            "title": "Besprechungsprotokoll 28.10.",
+            "description": "Zusammenfassung des Abstimmungscalls mit Handlungsempfehlungen.",
+            "status": "completed",
+            "category": "Protokoll",
+            "updatedAt": "2025-10-28T18:40:00+01:00",
+            "size": 131072,
+            "tags": ["Info", "Besprechung"],
+            "downloadUrl": "assets/mock/verilex-demo.pdf"
+          },
+          {
+            "id": "doc-az-dokumentenanfrage",
+            "title": "Unterlagenanforderung – Vertragsanhänge",
+            "description": "Bitte laden Sie die noch fehlenden Vertragsanhänge hoch. Nutzen Sie dazu die Upload-Funktion unten.",
+            "status": "new",
+            "category": "Anforderung",
+            "updatedAt": "2025-11-06T11:10:00+01:00",
+            "size": 0,
+            "tags": ["Neu", "Upload benötigt"],
+            "downloadUrl": "assets/mock/verilex-demo.pdf"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "task-feedback",
+            "title": "Freigabe Vergleichsentwurf erteilen",
+            "dueDate": "2025-11-12",
+            "status": "open"
+          },
+          {
+            "id": "task-unterlagen",
+            "title": "Vertragsanhänge hochladen",
+            "dueDate": "2025-11-11",
+            "status": "open"
+          },
+          {
+            "id": "task-ansprechpartner",
+            "title": "Rückmeldung zu Zustelladresse bestätigen",
+            "dueDate": "2025-11-08",
+            "status": "done",
+            "completedAt": "2025-11-07T10:00:00+01:00"
+          }
+        ],
+        "activities": [
+          {
+            "id": "activity-1",
+            "timestamp": "2025-11-05T17:45:00+01:00",
+            "type": "message",
+            "actor": "RAin Dr. Hannah Keller",
+            "content": "Wir haben den Vergleichsentwurf aktualisiert und benötigen Ihr Feedback.",
+            "meta": ["Akte: AZ 2025/078"]
+          },
+          {
+            "id": "activity-2",
+            "timestamp": "2025-11-02T14:20:00+01:00",
+            "type": "upload",
+            "actor": "VeriLex Kanzlei",
+            "content": "Kostenaufstellung für das dritte Quartal wurde bereitgestellt.",
+            "meta": ["Kategorie: Abrechnung"]
+          },
+          {
+            "id": "activity-3",
+            "timestamp": "2025-10-28T18:45:00+01:00",
+            "type": "note",
+            "actor": "RAin Dr. Hannah Keller",
+            "content": "Protokoll des Abstimmungscalls wurde im Portal abgelegt.",
+            "meta": ["Tag: Besprechung"]
+          }
+        ]
+      }
+    </script>
+
+    <script src="assets/js/mandantenportal.js" type="module"></script>
+  </body>
+</html>
