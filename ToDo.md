@@ -79,8 +79,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 21. **Datenexport (CSV-Mock)** – Füge eine Exportfunktion hinzu, um Demo-Daten als CSV herunterzuladen.
     Status: ✅ erledigt – 2025-11-07
 
-22. **Mandantenportal-Startseite** – Baue eine Mock-Seite, auf der Mandanten Dokumente sehen oder hochladen können (Platzhalter).  
-    Status: ⬜
+22. **Mandantenportal-Startseite** – Baue eine Mock-Seite, auf der Mandanten Dokumente sehen oder hochladen können (Platzhalter).
+    Status: ✅ erledigt – 2025-11-10
 
 23. **PWA-Grundstruktur** – Füge `manifest.json` und Service Worker hinzu, um eine PWA-Installation zu ermöglichen.  
     Status: ⬜
