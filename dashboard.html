@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Dashboard</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#1f3c88" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>VeriLex Dashboard</h1>
+      <p class="app-subtitle">
+        Überblick über Akten, Leistungen und Rechnungsstatus in der aktuellen Kalenderwoche.
+      </p>
+    </header>
+
+    <main class="app-main dashboard-main" aria-live="polite">
+      <section class="dashboard-summary" aria-labelledby="dashboard-summary-title">
+        <h2 id="dashboard-summary-title" class="dashboard-summary__title">Kennzahlen der Woche</h2>
+        <div class="dashboard-summary__grid" role="list">
+          <article class="dashboard-summary__card" role="listitem" aria-labelledby="summary-cases-label">
+            <p id="summary-cases-label" class="dashboard-summary__metric">Aktive Akten</p>
+            <p id="summary-cases-value" class="dashboard-summary__value">0</p>
+            <p class="dashboard-summary__footnote">inklusive aller laufenden Verfahren</p>
+          </article>
+          <article class="dashboard-summary__card" role="listitem" aria-labelledby="summary-hours-label">
+            <p id="summary-hours-label" class="dashboard-summary__metric">Erfasste Stunden</p>
+            <p id="summary-hours-value" class="dashboard-summary__value">0</p>
+            <p class="dashboard-summary__footnote">erfasst durch das interne Team in dieser Woche</p>
+          </article>
+          <article class="dashboard-summary__card" role="listitem" aria-labelledby="summary-invoices-label">
+            <p id="summary-invoices-label" class="dashboard-summary__metric">Rechnungsvolumen</p>
+            <p id="summary-invoices-value" class="dashboard-summary__value">0 €</p>
+            <p class="dashboard-summary__footnote">offene und überfällige Rechnungen gesamt</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="dashboard-grid" aria-labelledby="dashboard-visuals-title">
+        <h2 id="dashboard-visuals-title" class="visually-hidden">Visualisierte Kennzahlen</h2>
+
+        <article class="dashboard-card" aria-labelledby="case-chart-title">
+          <header class="dashboard-card__header">
+            <div>
+              <h3 id="case-chart-title">Akten nach Status</h3>
+              <p class="dashboard-card__description">
+                Vergleich der aktuell aktiven Mandate nach Bearbeitungsstand.
+              </p>
+            </div>
+            <span class="dashboard-card__meta">Stand: KW 45</span>
+          </header>
+          <div
+            id="case-status-chart"
+            class="dashboard-bar-chart"
+            role="img"
+            aria-describedby="case-chart-description"
+          ></div>
+          <p id="case-chart-description" class="dashboard-card__description">
+            Höhe der Balken entspricht der Anzahl der Fälle in der jeweiligen Kategorie.
+          </p>
+        </article>
+
+        <article class="dashboard-card" aria-labelledby="hours-chart-title">
+          <header class="dashboard-card__header">
+            <div>
+              <h3 id="hours-chart-title">Leistungsstunden nach Wochentag</h3>
+              <p class="dashboard-card__description">
+                Trend der erfassten Stunden im aktuellen Teamkalender.
+              </p>
+            </div>
+            <span class="dashboard-card__meta">Aktualisiert vor 2 Std.</span>
+          </header>
+          <div class="dashboard-trend-chart">
+            <svg
+              class="dashboard-trend-chart__svg"
+              id="hours-trend-chart"
+              viewBox="0 0 100 100"
+              role="img"
+              aria-describedby="hours-chart-description"
+              preserveAspectRatio="none"
+            ></svg>
+            <ul class="dashboard-trend-chart__axis" id="hours-trend-axis" aria-hidden="true"></ul>
+          </div>
+          <p id="hours-chart-description" class="dashboard-card__description">
+            Die Fläche zeigt die Verdichtung der Arbeitsleistung im Wochenverlauf.
+          </p>
+        </article>
+
+        <article class="dashboard-card" aria-labelledby="invoice-chart-title">
+          <header class="dashboard-card__header">
+            <div>
+              <h3 id="invoice-chart-title">Rechnungsstatus</h3>
+              <p class="dashboard-card__description">
+                Verhältnis bezahlter, offener und überfälliger Rechnungen.
+              </p>
+            </div>
+            <span class="dashboard-card__meta">Demo-Daten</span>
+          </header>
+          <div class="dashboard-donut-wrapper">
+            <div
+              id="invoice-status-chart"
+              class="dashboard-donut"
+              role="img"
+              aria-describedby="invoice-chart-description"
+            >
+              <div class="dashboard-donut__label">
+                <span id="invoice-donut-value" class="dashboard-donut__value">0%</span>
+                <span id="invoice-donut-caption" class="dashboard-donut__caption">Bezahlt</span>
+              </div>
+            </div>
+            <ul class="dashboard-legend" id="invoice-status-legend"></ul>
+          </div>
+          <p id="invoice-chart-description" class="dashboard-card__description">
+            Legende mit absoluten Werten je Kategorie.
+          </p>
+        </article>
+      </section>
+    </main>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/dashboard.js" type="module"></script>
+  </body>
+</html>

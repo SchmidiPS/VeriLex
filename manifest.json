@@ -1,0 +1,10 @@
+{
+  "name": "VeriLex Demo",
+  "short_name": "VeriLex",
+  "description": "Mock-Oberfläche für digitale Kanzleiprozesse in VeriLex.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#1f3c88"
+}
