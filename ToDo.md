@@ -91,8 +91,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 25. **Dashboard-Übersicht** – Erstelle ein Dashboard mit Platzhalter-Diagrammen für Akten, Leistungen und Rechnungen.
     Status: ✅ erledigt – 2025-11-10
 
-26. **KI-Assistent (Mock)** – Integriere einen Chat-Bereich, der einfache Platzhalter-Antworten liefert.  
-    Status: ⬜
+26. **KI-Assistent (Mock)** – Integriere einen Chat-Bereich, der einfache Platzhalter-Antworten liefert.
+    Status: ✅ erledigt – 2025-11-10
 
 27. **Rechteprüfung für Dokumente** – Prüfe bei jedem Zugriff, ob der aktuelle Nutzer laut Profil Rechte auf das Dokument hat (Mock-Prüfung).  
     Status: ⬜
