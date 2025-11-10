@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – KI-Assistent</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#1f3c88" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>VeriLex Demo</h1>
+      <p class="app-subtitle">KI-gestützte Unterstützung für Kanzleiteams</p>
+    </header>
+
+    <main class="app-main ai-assistant-main" aria-live="polite">
+      <nav class="case-breadcrumb" aria-label="Brotkrumen">
+        <a class="case-breadcrumb__link" href="index.html">&larr; Zur Startseite</a>
+      </nav>
+
+      <section class="app-card ai-assistant" aria-labelledby="ai-assistant-title" data-visible-for="all">
+        <header class="ai-assistant__header">
+          <div>
+            <h2 id="ai-assistant-title">KI-Assistent für wiederkehrende Kanzleiabläufe</h2>
+            <p class="ai-assistant__description">
+              Stellen Sie dem Assistenten Fragen zu Fristen, Rechnungen oder Dokumentenworkflows. Die Antworten
+              basieren auf vordefinierten Wissensbausteinen und verlinken auf die passenden Mock-Module dieser Demo.
+            </p>
+          </div>
+          <div class="ai-assistant__status" role="status" aria-live="polite">
+            <span class="ai-assistant__status-indicator" aria-hidden="true"></span>
+            <span class="ai-assistant__status-text">Demo-Modus &middot; Antworten werden simuliert</span>
+          </div>
+        </header>
+
+        <div class="ai-assistant__layout">
+          <section class="ai-chat" aria-labelledby="ai-chat-title">
+            <header class="ai-section__header">
+              <h3 id="ai-chat-title">Konversation</h3>
+              <p class="ai-section__hint">Enter sendet die Nachricht, Umschalt+Enter fügt einen Zeilenumbruch ein.</p>
+            </header>
+
+            <div class="ai-chat__messages-wrapper">
+              <ol id="assistant-conversation" class="ai-chat__messages" role="list" aria-live="polite"></ol>
+              <p id="assistant-empty-state" class="ai-chat__empty-state" hidden>
+                Noch keine Nachrichten vorhanden. Stellen Sie die erste Frage, um den Assistenten zu aktivieren.
+              </p>
+              <p id="assistant-typing" class="ai-chat__typing" role="status" aria-live="polite" hidden>
+                Der Assistent denkt nach…
+              </p>
+            </div>
+
+            <form id="assistant-form" class="ai-chat__form" autocomplete="off">
+              <label class="visually-hidden" for="assistant-input">Nachricht an den Assistenten</label>
+              <textarea
+                id="assistant-input"
+                class="ai-chat__input"
+                name="message"
+                rows="3"
+                placeholder="Beschreiben Sie Ihr Anliegen, z. B. &bdquo;Welche Fristen laufen in den nächsten 7 Tagen ab?&ldquo;"
+                required
+              ></textarea>
+              <div class="ai-chat__actions">
+                <button type="reset" class="btn btn-secondary ai-chat__reset">Feld leeren</button>
+                <button type="submit" class="btn btn-primary ai-chat__submit">
+                  <span class="ai-chat__submit-icon" aria-hidden="true">➤</span>
+                  Nachricht senden
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <aside class="ai-sidepanel" aria-labelledby="ai-sidepanel-title">
+            <div class="ai-section__header">
+              <h3 id="ai-sidepanel-title">Kontext &amp; Schnellaktionen</h3>
+              <p class="ai-section__hint">Nutzen Sie die Vorschläge, um typische Fragen schneller zu stellen.</p>
+            </div>
+
+            <section class="ai-section" aria-labelledby="ai-briefing-title">
+              <h4 id="ai-briefing-title" class="ai-section__title">Mandatsbriefing</h4>
+              <div id="assistant-briefing" class="ai-briefing"></div>
+            </section>
+
+            <section class="ai-section" aria-labelledby="ai-quick-actions-title">
+              <h4 id="ai-quick-actions-title" class="ai-section__title">Empfohlene Fragen</h4>
+              <div id="assistant-quick-actions" class="ai-quick-actions"></div>
+            </section>
+
+            <section class="ai-section" aria-labelledby="ai-follow-ups-title" hidden>
+              <h4 id="ai-follow-ups-title" class="ai-section__title">Folgefragen</h4>
+              <div id="assistant-follow-ups" class="ai-quick-actions"></div>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <section class="role-access-message" data-visible-for="accounting">
+        <h2>Einsatz für alle Rollen verfügbar</h2>
+        <p>
+          Der KI-Assistent steht auch Fachabteilungen außerhalb des Tagesgeschäfts zur Verfügung. Nutzen Sie die Vorschläge,
+          um wiederkehrende Fragen rund um Rechnungen, offene Posten oder Arbeitsabläufe zu klären.
+        </p>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document" tabindex="-1">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button type="button" class="error-overlay__close" aria-label="Fehlermeldung schließen" data-error-action="dismiss">
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details" hidden>
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="application/json" id="assistant-knowledge">
+      {
+        "topics": [
+          {
+            "id": "deadlines",
+            "keywords": ["frist", "deadlines", "termin", "erinner"],
+            "response": "Für Fristen nutze das [link:deadline-board.html|Fristen-Board], um nach Status zu filtern. Für konkrete Termine findest du im [link:calendar.html|Kalender] alle anstehenden Sitzungen.",
+            "followUps": [
+              "Zeig mir überfällige Fristen",
+              "Kannst du eine Erinnerung für die Patentfrist erstellen?"
+            ]
+          },
+          {
+            "id": "invoices",
+            "keywords": ["rechnung", "honorar", "offene posten", "mahnung"],
+            "response": "Zur Rechnungsstellung führt dich der [link:invoice-wizard.html|Rechnungs-Wizard] Schritt für Schritt. Einen Überblick über Zahlstatus erhältst du in der [link:open-items.html|Offene-Posten-Liste].",
+            "followUps": [
+              "Welche Rechnungen sind überfällig?",
+              "Erstelle eine neue Abschlagsrechnung"
+            ]
+          },
+          {
+            "id": "documents",
+            "keywords": ["dokument", "upload", "vorlage", "textbaustein"],
+            "response": "Für neue Schriftsätze kannst du im [link:template-assistant.html|Vorlagen-Assistenten] Textbausteine kombinieren. Uploads und Versionierung legst du in der [link:document-management.html|Dokumentenverwaltung] ab.",
+            "followUps": [
+              "Zeig mir die letzten hochgeladenen Dokumente",
+              "Wie passe ich die Vorlage für die Klageerwiderung an?"
+            ]
+          },
+          {
+            "id": "time-tracking",
+            "keywords": ["zeit", "stoppuhr", "leistung", "tracking"],
+            "response": "Arbeitszeiten kannst du mit der [link:time-tracking.html|Zeiterfassung] stoppen und anschließend in der [link:performance-overview.html|Leistungsübersicht] nach Mandant:in auswerten.",
+            "followUps": [
+              "Starte eine neue Zeitmessung",
+              "Welche Leistungen sind noch nicht fakturiert?"
+            ]
+          },
+          {
+            "id": "workflow",
+            "keywords": ["workflow", "prozess", "automation", "rag"],
+            "response": "Der [link:workflow-designer.html|Workflow-Designer] zeigt, wie Schritte miteinander verknüpft werden. Perspektivisch lässt sich der KI-RAG-Agent dort andocken, um Dokumente rollenbasiert einzubeziehen.",
+            "followUps": [
+              "Wie starte ich einen neuen Workflow?",
+              "Welche Schritte hat der Onboarding-Prozess?"
+            ]
+          }
+        ],
+        "defaultResponses": [
+          "Ich habe dein Anliegen protokolliert. Für einen schnellen Überblick lohnt sich außerdem das [link:dashboard.html|Dashboard].",
+          "Danke für die Info! Prüfe parallel die [link:case-detail.html|Akten-Details], um Kontext zur Angelegenheit zu behalten.",
+          "Verstanden. Im Zweifel findest du weitere Hinweise in der [link:mandantenportal.html|Mandantenansicht] oder im [link:email-integration.html|E-Mail-Postfach]."
+        ]
+      }
+    </script>
+
+    <script type="application/json" id="assistant-suggestions">
+      [
+        {
+          "label": "Welche Fristen stehen heute an?",
+          "message": "Welche Fristen stehen heute an?",
+          "autoSend": true
+        },
+        {
+          "label": "Zeige mir aktuelle Rechnungsentwürfe",
+          "message": "Welche Rechnungsentwürfe sind noch offen?",
+          "autoSend": true
+        },
+        {
+          "label": "Wo finde ich den letzten Upload der Mandantin?",
+          "message": "Wo finde ich den letzten Dokumentenupload der Mandantin?",
+          "autoSend": true
+        },
+        {
+          "label": "Wie starte ich die Zeiterfassung?",
+          "message": "Wie starte ich eine neue Zeiterfassung?",
+          "autoSend": true
+        }
+      ]
+    </script>
+
+    <script type="application/json" id="assistant-briefing-data">
+      {
+        "client": "Müller GmbH",
+        "matter": "Vertragsprüfung Lieferantenrahmenvertrag",
+        "phase": "Verhandlung der finalen Klauseln",
+        "keyDates": [
+          {
+            "label": "Nächste Abgabefrist",
+            "value": "12.11.2025 &ndash; Stellungnahme zur Gegenargumentation"
+          },
+          {
+            "label": "Interner Review",
+            "value": "11.11.2025 &ndash; Feedback durch RAin Dr. Hannah Keller"
+          }
+        ],
+        "team": [
+          "RA Felix Sommer (Lead)",
+          "RAin Dr. Hannah Keller",
+          "PA Lina Berg (Assistenz)"
+        ],
+        "notes": [
+          "Priorität: Anpassung der Haftungsklausel gemäß Mandantenwunsch",
+          "Neue Dokumente werden automatisch im Mandantenportal gespiegelt"
+        ]
+      }
+    </script>
+
+    <script src="assets/js/ai-assistant.js" type="module"></script>
+  </body>
+</html>

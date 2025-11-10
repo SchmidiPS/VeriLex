@@ -22,6 +22,7 @@ const NAVIGATION_LINKS = [
   { label: 'Mandats-Wizard', href: 'mandate-wizard.html', roles: ['partner', 'associate'] },
   { label: 'Dokumente', href: 'document-management.html', roles: ['partner', 'associate', 'assistant'] },
   { label: 'Mandantenportal', href: 'mandantenportal.html', roles: ['all'] },
+  { label: 'KI-Assistent', href: 'ai-assistant.html', roles: ['all'] },
   { label: 'Zeiterfassung', href: 'time-tracking.html', roles: ['partner', 'associate', 'assistant'] },
   { label: 'Rechnungen', href: 'invoice-wizard.html', roles: ['partner', 'accounting'] },
   { label: 'Offene Posten', href: 'open-items.html', roles: ['partner', 'accounting'] },
