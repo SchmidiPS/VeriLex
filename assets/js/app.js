@@ -177,6 +177,11 @@ const NAVIGATION_LINKS = [
   { label: 'KI-Assistent', href: 'ai-assistant.html', roles: ['all'] },
   { label: 'Zeiterfassung', href: 'time-tracking.html', roles: ['partner', 'associate', 'assistant'] },
   {
+    label: 'Team-Auslastung',
+    href: 'team-capacity.html',
+    roles: ['partner', 'associate', 'assistant'],
+  },
+  {
     label: 'Compliance',
     href: 'compliance-checklist.html',
     roles: ['partner', 'associate', 'assistant'],

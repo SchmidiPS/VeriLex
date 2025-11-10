@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Team-Auslastung</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#1f3c88" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Team-Auslastung</h1>
+      <p class="app-subtitle">
+        Überwachen Sie Kapazitäten, Auslastung und kritische Mandate des gesamten Teams für die aktuelle Planungswoche.
+      </p>
+      <div class="welcome-actions">
+        <a class="btn btn-secondary" href="index.html">Zur Übersicht</a>
+        <a class="btn btn-secondary" href="dashboard.html">Zum Dashboard</a>
+      </div>
+    </header>
+
+    <main class="app-main team-capacity-main" aria-live="polite">
+      <section
+        class="app-card capacity-overview"
+        aria-labelledby="capacity-overview-title"
+        data-visible-for="partner,associate,assistant"
+      >
+        <header class="capacity-overview__header">
+          <div>
+            <h2 id="capacity-overview-title">Team-Auslastung der Woche</h2>
+            <p class="capacity-overview__description" id="capacity-overview-description">
+              Kennzahlen werden geladen …
+            </p>
+          </div>
+          <div class="capacity-overview__indicator" role="group" aria-label="Gesamtauslastung">
+            <div class="capacity-indicator" aria-live="polite">
+              <div class="capacity-indicator__value" id="capacity-indicator-value">0%</div>
+              <p class="capacity-indicator__label">Gesamtauslastung</p>
+            </div>
+            <p class="capacity-overview__meta" id="capacity-overview-meta"></p>
+          </div>
+        </header>
+
+        <dl class="capacity-summary" aria-label="Kapazitätskennzahlen">
+          <div class="capacity-summary__item">
+            <dt>Verfügbare Stunden</dt>
+            <dd id="capacity-total-hours">0 h</dd>
+          </div>
+          <div class="capacity-summary__item">
+            <dt>Verplant</dt>
+            <dd id="capacity-booked-hours">0 h</dd>
+          </div>
+          <div class="capacity-summary__item">
+            <dt>Billbar</dt>
+            <dd id="capacity-billable-hours">0 h</dd>
+          </div>
+          <div class="capacity-summary__item">
+            <dt>Freie Kapazität</dt>
+            <dd id="capacity-free-hours">0 h</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section
+        class="app-card capacity-table"
+        aria-labelledby="capacity-table-title"
+        data-visible-for="partner,associate,assistant"
+      >
+        <header class="capacity-table__header">
+          <div>
+            <h2 id="capacity-table-title">Auslastung nach Teammitglied</h2>
+            <p class="capacity-table__description">
+              Filtern Sie nach Rolle, Auslastungsgrad oder Mandat, um gezielte Maßnahmen zu planen.
+            </p>
+          </div>
+          <div class="capacity-table__legend" role="list" aria-label="Legende der Auslastungsstufen">
+            <span class="capacity-status capacity-status--critical" role="listitem">≥ 90&nbsp;% Engpass</span>
+            <span class="capacity-status capacity-status--warning" role="listitem">70–89&nbsp;% Beobachten</span>
+            <span class="capacity-status capacity-status--ok" role="listitem">≤ 69&nbsp;% Frei</span>
+          </div>
+        </header>
+
+        <form class="capacity-filters" aria-label="Auslastung filtern" novalidate>
+          <div class="capacity-filter">
+            <label class="capacity-filter__label" for="capacity-search">Suche</label>
+            <input
+              type="search"
+              id="capacity-search"
+              name="search"
+              placeholder="Nach Namen, Mandat oder Hinweis suchen"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <div class="capacity-filter">
+            <label class="capacity-filter__label" for="capacity-role-filter">Rolle</label>
+            <select id="capacity-role-filter" name="role">
+              <option value="">Alle Rollen</option>
+            </select>
+          </div>
+          <div class="capacity-filter">
+            <label class="capacity-filter__label" for="capacity-load-filter">Auslastung</label>
+            <select id="capacity-load-filter" name="load">
+              <option value="all">Alle Stufen</option>
+              <option value="critical">≥ 90 %</option>
+              <option value="warning">70–89 %</option>
+              <option value="ok">≤ 69 %</option>
+            </select>
+          </div>
+        </form>
+
+        <div class="table-wrapper" role="region" aria-labelledby="capacity-table-title">
+          <table class="performance-table capacity-table__table">
+            <thead>
+              <tr>
+                <th scope="col">Teammitglied</th>
+                <th scope="col">Rolle</th>
+                <th scope="col">Kapazität</th>
+                <th scope="col">Auslastung</th>
+                <th scope="col">Billbar</th>
+                <th scope="col">Verfügbar</th>
+                <th scope="col">Hinweis</th>
+              </tr>
+            </thead>
+            <tbody id="capacity-table-body"></tbody>
+          </table>
+        </div>
+        <p id="capacity-empty-state" class="capacity-empty-state" hidden>
+          Es wurden keine Teammitglieder für die aktuelle Filterauswahl gefunden.
+        </p>
+      </section>
+
+      <section
+        class="app-card capacity-insights"
+        aria-labelledby="capacity-insights-title"
+        data-visible-for="partner,associate,assistant"
+      >
+        <header class="capacity-insights__header">
+          <div>
+            <h2 id="capacity-insights-title">Engpässe &amp; Maßnahmenplanung</h2>
+            <p class="capacity-insights__description">
+              Priorisieren Sie Aufgaben mit hoher Auslastung und legen Sie Unterstützungsmaßnahmen fest.
+            </p>
+          </div>
+        </header>
+        <div class="capacity-insights__grid">
+          <article class="capacity-insight" aria-labelledby="capacity-bottlenecks-title">
+            <h3 id="capacity-bottlenecks-title">Dringende Mandate</h3>
+            <ul id="capacity-bottleneck-list" class="capacity-list" role="list"></ul>
+          </article>
+          <article class="capacity-insight" aria-labelledby="capacity-upcoming-title">
+            <h3 id="capacity-upcoming-title">Nächste Meilensteine</h3>
+            <ul id="capacity-upcoming-list" class="capacity-list" role="list"></ul>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <section class="role-access-message" data-visible-for="accounting">
+      <h2>Auslastung nicht verfügbar</h2>
+      <p>
+        Dieses Modul richtet sich an Kanzleileitung und juristische Teams. Für das Rechnungswesen stehen Leistungs- und
+        Liquiditätsauswertungen zur Verfügung.
+      </p>
+    </section>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details">
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">Seite neu laden</button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">Schließen</button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="application/json" id="team-capacity-data">
+      {
+        "planningPeriod": "KW 46 · 10.–16. November 2025",
+        "summary": {
+          "totalCapacity": 168,
+          "booked": 141,
+          "billable": 124,
+          "nonBillable": 17
+        },
+        "members": [
+          {
+            "id": "anna-huber",
+            "name": "Dr. Anna Huber",
+            "roleLabel": "Partnerin",
+            "roleId": "partner",
+            "capacity": 32,
+            "booked": 30,
+            "billable": 26,
+            "nonBillable": 4,
+            "focus": "GreenTech Due Diligence",
+            "case": "I-2024-004",
+            "status": "critical",
+            "nextMilestone": "Review Abschlussbericht 12.11."
+          },
+          {
+            "id": "markus-fellner",
+            "name": "Mag. Markus Fellner",
+            "roleLabel": "Associate",
+            "roleId": "associate",
+            "capacity": 40,
+            "booked": 34,
+            "billable": 31,
+            "nonBillable": 3,
+            "focus": "Arbeitsrechtliche Beratung Schmidt",
+            "case": "A-2024-017",
+            "status": "warning",
+            "nextMilestone": "Stellungnahme 11.11. einreichen"
+          },
+          {
+            "id": "lisa-kern",
+            "name": "Mag. Lisa Kern",
+            "roleLabel": "Associate",
+            "roleId": "associate",
+            "capacity": 38,
+            "booked": 33,
+            "billable": 28,
+            "nonBillable": 5,
+            "focus": "Zivilverfahren Weber",
+            "case": "M-2023-089",
+            "status": "warning",
+            "nextMilestone": "Beweisantrag 13.11. vorbereiten"
+          },
+          {
+            "id": "franziska-mair",
+            "name": "Franziska Mair",
+            "roleLabel": "Assistenz",
+            "roleId": "assistant",
+            "capacity": 30,
+            "booked": 19,
+            "billable": 12,
+            "nonBillable": 7,
+            "focus": "Termin- und Dokumentenkoordination",
+            "case": "Mehrere Mandate",
+            "status": "ok",
+            "nextMilestone": "ERV-Paket für Müller GmbH am 14.11. erstellen"
+          },
+          {
+            "id": "georg-bauer",
+            "name": "Georg Bauer",
+            "roleLabel": "Partner",
+            "roleId": "partner",
+            "capacity": 28,
+            "booked": 25,
+            "billable": 21,
+            "nonBillable": 4,
+            "focus": "Risikomonitor Mandate",
+            "case": "Portfoliobetreuung",
+            "status": "ok",
+            "nextMilestone": "Strategiemeeting 15.11. moderieren"
+          }
+        ],
+        "bottlenecks": [
+          {
+            "title": "GreenTech Due Diligence",
+            "severity": "hoch",
+            "owner": "Dr. Anna Huber",
+            "action": "Zweitprüfung an Lisa Kern delegieren und Partner-Review fixieren."
+          },
+          {
+            "title": "Arbeitsrecht Schmidt",
+            "severity": "mittel",
+            "owner": "Mag. Markus Fellner",
+            "action": "Kanzlei-interne Checkliste für Vergleichsangebot vorbereiten."
+          },
+          {
+            "title": "Zivilverfahren Weber",
+            "severity": "mittel",
+            "owner": "Mag. Lisa Kern",
+            "action": "Dokumentenpaket bis 12.11. mit Assistenz abstimmen."
+          }
+        ],
+        "upcoming": [
+          {
+            "date": "2025-11-11",
+            "label": "Stellungnahme im Fall Schmidt finalisieren",
+            "owner": "Mag. Markus Fellner"
+          },
+          {
+            "date": "2025-11-12",
+            "label": "Review Due-Diligence-Bericht GreenTech",
+            "owner": "Dr. Anna Huber"
+          },
+          {
+            "date": "2025-11-14",
+            "label": "ERV-Paket Müller GmbH einreichen",
+            "owner": "Franziska Mair"
+          },
+          {
+            "date": "2025-11-15",
+            "label": "Strategiemeeting Portfoliobetreuung moderieren",
+            "owner": "Georg Bauer"
+          }
+        ]
+      }
+    </script>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/team-capacity.js" type="module"></script>
+  </body>
+</html>
