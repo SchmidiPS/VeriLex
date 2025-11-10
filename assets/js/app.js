@@ -7,6 +7,16 @@ import {
   writeStoredRole,
 } from './auth-utils.js';
 
+const THEME_STORAGE_KEY = 'verilex:theme-preference';
+const THEMES = {
+  LIGHT: 'light',
+  DARK: 'dark',
+};
+
+let currentTheme = THEMES.LIGHT;
+let hasExplicitThemeChoice = false;
+let themeToggleEl = null;
+
 const originalHiddenState = new WeakMap();
 let activeRoleId = null;
 const disableRoleSelector = document.documentElement.hasAttribute(
@@ -15,6 +25,147 @@ const disableRoleSelector = document.documentElement.hasAttribute(
 let profileControlRoot = null;
 let profileMenuEl = null;
 let profileToggleEl = null;
+
+const prefersDarkMediaQuery = window.matchMedia(
+  '(prefers-color-scheme: dark)'
+);
+
+function readStoredThemePreference() {
+  try {
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (stored === THEMES.DARK || stored === THEMES.LIGHT) {
+      return stored;
+    }
+  } catch (error) {
+    console.warn('Unable to read stored theme preference.', error);
+  }
+  return null;
+}
+
+function writeStoredThemePreference(theme) {
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch (error) {
+    console.warn('Unable to persist theme preference.', error);
+  }
+}
+
+function applyMetaThemeColor(theme) {
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if (!themeColorMeta) {
+    return;
+  }
+
+  const metaColor = theme === THEMES.DARK ? '#0f172a' : '#1f3c88';
+  themeColorMeta.setAttribute('content', metaColor);
+}
+
+function updateThemeToggleUi() {
+  if (!themeToggleEl) {
+    return;
+  }
+
+  const isDark = currentTheme === THEMES.DARK;
+  themeToggleEl.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+  themeToggleEl.setAttribute(
+    'title',
+    isDark ? 'Hellmodus aktivieren' : 'Dunkelmodus aktivieren'
+  );
+
+  const icon = themeToggleEl.querySelector('.theme-toggle__icon');
+  if (icon) {
+    icon.textContent = isDark ? '☀️' : '🌙';
+  }
+
+  const label = themeToggleEl.querySelector('.theme-toggle__label');
+  if (label) {
+    label.textContent = isDark ? 'Hellmodus' : 'Dunkelmodus';
+  }
+
+  const state = themeToggleEl.querySelector('.theme-toggle__state');
+  if (state) {
+    state.textContent = isDark ? 'aktiv' : 'inaktiv';
+  }
+}
+
+function applyTheme(theme, { persist = false } = {}) {
+  currentTheme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  applyMetaThemeColor(theme);
+  updateThemeToggleUi();
+
+  if (persist) {
+    writeStoredThemePreference(theme);
+    hasExplicitThemeChoice = true;
+  }
+}
+
+function ensureProfileControlRoot() {
+  if (profileControlRoot && document.body.contains(profileControlRoot)) {
+    return profileControlRoot;
+  }
+
+  const header = document.querySelector('.app-header');
+  if (!header) {
+    return null;
+  }
+
+  if (!profileControlRoot) {
+    profileControlRoot = document.createElement('div');
+    profileControlRoot.className = 'profile-control';
+  }
+
+  if (!header.contains(profileControlRoot)) {
+    header.append(profileControlRoot);
+  }
+
+  return profileControlRoot;
+}
+
+function initThemeToggle() {
+  const root = ensureProfileControlRoot();
+  if (!root) {
+    return;
+  }
+
+  if (!themeToggleEl) {
+    themeToggleEl = document.createElement('button');
+    themeToggleEl.type = 'button';
+    themeToggleEl.className = 'theme-toggle';
+    themeToggleEl.innerHTML = `
+      <span class="theme-toggle__icon" aria-hidden="true"></span>
+      <span class="theme-toggle__text">
+        <span class="theme-toggle__label"></span>
+        <span class="theme-toggle__state" aria-hidden="true"></span>
+      </span>
+    `;
+
+    themeToggleEl.addEventListener('click', () => {
+      const nextTheme = currentTheme === THEMES.DARK ? THEMES.LIGHT : THEMES.DARK;
+      applyTheme(nextTheme, { persist: true });
+    });
+  }
+
+  if (!root.contains(themeToggleEl)) {
+    root.prepend(themeToggleEl);
+  }
+
+  updateThemeToggleUi();
+}
+
+const storedThemePreference = readStoredThemePreference();
+hasExplicitThemeChoice = storedThemePreference !== null;
+const initialTheme =
+  storedThemePreference ?? (prefersDarkMediaQuery.matches ? THEMES.DARK : THEMES.LIGHT);
+applyTheme(initialTheme);
+
+prefersDarkMediaQuery.addEventListener('change', (event) => {
+  if (hasExplicitThemeChoice) {
+    return;
+  }
+
+  applyTheme(event.matches ? THEMES.DARK : THEMES.LIGHT);
+});
 
 const NAVIGATION_LINKS = [
   { label: 'Start', href: 'index.html', roles: ['all'] },
@@ -216,20 +367,19 @@ function closeProfileMenu() {
 }
 
 function renderProfileControls() {
-  const header = document.querySelector('.app-header');
-  if (!header) {
+  const root = ensureProfileControlRoot();
+  if (!root) {
     return;
-  }
-
-  if (!profileControlRoot) {
-    profileControlRoot = document.createElement('div');
-    profileControlRoot.className = 'profile-control';
-    header.append(profileControlRoot);
   }
 
   closeProfileMenu();
 
-  profileControlRoot.innerHTML = '';
+  const existingThemeToggle = root.querySelector('.theme-toggle');
+  root.innerHTML = '';
+
+  if (existingThemeToggle) {
+    root.append(existingThemeToggle);
+  }
 
   const status = document.createElement('p');
   status.id = 'role-status-message';
@@ -237,7 +387,7 @@ function renderProfileControls() {
   status.setAttribute('role', 'status');
   status.setAttribute('aria-live', 'polite');
   status.textContent = `Aktive Rolle: ${getRoleDefinition(activeRoleId).label}`;
-  profileControlRoot.append(status);
+  root.append(status);
 
   const session = readMockSession();
 
@@ -246,7 +396,7 @@ function renderProfileControls() {
     loginLink.href = 'login.html';
     loginLink.className = 'btn btn-secondary profile-login-link';
     loginLink.textContent = 'Anmelden';
-    profileControlRoot.append(loginLink);
+    root.append(loginLink);
     profileMenuEl = null;
     profileToggleEl = null;
     return;
@@ -279,7 +429,7 @@ function renderProfileControls() {
     }
   });
 
-  profileControlRoot.append(toggle);
+  root.append(toggle);
 
   const menu = document.createElement('div');
   menu.className = 'profile-menu';
@@ -344,7 +494,7 @@ function renderProfileControls() {
   logoutLink.setAttribute('role', 'menuitem');
   menu.append(logoutLink);
 
-  profileControlRoot.append(menu);
+  root.append(menu);
 
   profileMenuEl = menu;
   profileToggleEl = toggle;
@@ -415,6 +565,7 @@ function initRoleAccessControl() {
 
 initSecurityBanner();
 initializeNavigation();
+initThemeToggle();
 initRoleAccessControl();
 
 class GlobalErrorOverlay {

@@ -97,8 +97,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 27. **Rechteprüfung für Dokumente** – Prüfe bei jedem Zugriff, ob der aktuelle Nutzer laut Profil Rechte auf das Dokument hat (Mock-Prüfung).
     Status: ✅ erledigt – 2025-11-10
 
-28. **Pflege dieser ToDo-Liste** – Halte diese Datei aktuell, markiere erledigte Aufgaben und füge neue hinzu.  
-    Status: ⬜
+28. **Pflege dieser ToDo-Liste** – Halte diese Datei aktuell, markiere erledigte Aufgaben und füge neue hinzu.
+    Status: ✅ erledigt – 2025-11-10
 
-29. **Dark-Mode-Umschalter** – Implementiere einen Toggle zwischen Hell- und Dunkelmodus (Einstellung im LocalStorage speichern).  
-    Status: ⬜
+29. **Dark-Mode-Umschalter** – Implementiere einen Toggle zwischen Hell- und Dunkelmodus (Einstellung im LocalStorage speichern).
+    Status: ✅ erledigt – 2025-11-10
