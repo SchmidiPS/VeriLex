@@ -108,3 +108,6 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 
 31. **Compliance-Checkliste & Prüfplan** – Ergänze ein Modul, das wiederkehrende Kanzlei-Compliance-Prüfpunkte bündelt, Filter und Fortschrittsanzeige bietet sowie eine exportierbare Maßnahmenliste erzeugt.
     Status: ✅ erledigt – 2025-11-10
+
+32. **Team-Auslastungsmonitor** – Visualisiere Kapazitäten, Auslastung und Engpässe pro Teammitglied. Filter nach Rolle und Auslastungsgrad, plus Hinweise zu Maßnahmen.
+    Status: ✅ erledigt – 2025-11-10
