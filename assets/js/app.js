@@ -176,6 +176,11 @@ const NAVIGATION_LINKS = [
   { label: 'Mandantenportal', href: 'mandantenportal.html', roles: ['all'] },
   { label: 'KI-Assistent', href: 'ai-assistant.html', roles: ['all'] },
   { label: 'Zeiterfassung', href: 'time-tracking.html', roles: ['partner', 'associate', 'assistant'] },
+  {
+    label: 'Compliance',
+    href: 'compliance-checklist.html',
+    roles: ['partner', 'associate', 'assistant'],
+  },
   { label: 'Rechnungen', href: 'invoice-wizard.html', roles: ['partner', 'accounting'] },
   { label: 'Offene Posten', href: 'open-items.html', roles: ['partner', 'accounting'] },
   { label: 'Workflow', href: 'workflow-designer.html', roles: ['partner'] }
