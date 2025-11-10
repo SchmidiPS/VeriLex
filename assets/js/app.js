@@ -147,8 +147,17 @@ function updateRoleStatus(roleDefinition) {
   document.documentElement.setAttribute('data-active-role', roleDefinition.id);
 }
 
+function announceRoleChange(roleId) {
+  window.dispatchEvent(
+    new CustomEvent('verilex:role-changed', {
+      detail: { roleId },
+    })
+  );
+}
+
 function applyRoleVisibility(requestedRoleId) {
   const roleDefinition = getRoleDefinition(requestedRoleId);
+  const previousRole = activeRoleId;
   activeRoleId = roleDefinition.id;
   updateRoleStatus(roleDefinition);
 
@@ -160,6 +169,10 @@ function applyRoleVisibility(requestedRoleId) {
       allowedRoles.includes(activeRoleId);
     setNodeVisibility(node, isVisible);
   });
+
+  if (previousRole !== activeRoleId) {
+    announceRoleChange(activeRoleId);
+  }
 }
 
 function handleProfileDocumentClick(event) {

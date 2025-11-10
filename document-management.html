@@ -165,7 +165,7 @@
 
     <script type="application/json" id="document-seed-data">
       [
-        { 
+        {
           "id": "doc-001",
           "name": "Klageentwurf.pdf",
           "mimeType": "application/pdf",
@@ -175,7 +175,11 @@
           "status": "Entwurf – finale Prüfung läuft",
           "tags": ["Klage", "Entwurf"],
           "notes": "Vor Versand an Mandantin prüfen.",
-          "viewerUrl": "assets/mock/verilex-demo.pdf"
+          "viewerUrl": "assets/mock/verilex-demo.pdf",
+          "permissions": {
+            "view": ["partner", "associate"],
+            "manage": ["partner"]
+          }
         },
         {
           "id": "doc-002",
@@ -186,7 +190,11 @@
           "uploadedBy": "Syndikus RA Tim Berger",
           "status": "Freigegeben",
           "tags": ["Beweis", "Bild"],
-          "notes": "Referenz für Abschnitt 4 des Schriftsatzes."
+          "notes": "Referenz für Abschnitt 4 des Schriftsatzes.",
+          "permissions": {
+            "view": ["partner", "associate", "assistant"],
+            "manage": ["partner", "associate"]
+          }
         },
         {
           "id": "doc-003",
@@ -197,7 +205,11 @@
           "uploadedBy": "RAin Dr. Hannah Keller",
           "status": "Feedback des Mandanten erforderlich",
           "tags": ["Vergleich", "ToDo"],
-          "notes": "Mandantenfeedback bis Ende KW45 einarbeiten."
+          "notes": "Mandantenfeedback bis Ende KW45 einarbeiten.",
+          "permissions": {
+            "view": ["partner"],
+            "manage": ["partner"]
+          }
         }
       ]
     </script>
