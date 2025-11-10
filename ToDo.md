@@ -102,3 +102,6 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 
 29. **Dark-Mode-Umschalter** – Implementiere einen Toggle zwischen Hell- und Dunkelmodus (Einstellung im LocalStorage speichern).
     Status: ✅ erledigt – 2025-11-10
+
+30. **Risikomonitor für Mandate** – Erstelle eine Heatmap-Ansicht der Mandatsrisiken mit Filtern, Detailtabelle und Exportfunktion.
+    Status: ✅ erledigt – 2025-11-10

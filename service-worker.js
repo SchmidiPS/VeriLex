@@ -3,11 +3,13 @@ const APP_SHELL = [
   './',
   './index.html',
   './dashboard.html',
+  './risk-monitor.html',
   './manifest.json',
   './assets/css/styles.css',
   './assets/js/app.js',
   './assets/js/auth-utils.js',
-  './assets/js/dashboard.js'
+  './assets/js/dashboard.js',
+  './assets/js/risk-monitor.js'
 ];
 
 self.addEventListener('install', (event) => {

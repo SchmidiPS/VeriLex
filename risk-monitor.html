@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Risikomonitor</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#1f3c88" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Risikomonitor für Mandate</h1>
+      <p class="app-subtitle">
+        Behalten Sie kritische Verfahren im Blick, priorisieren Sie Gegenmaßnahmen und erkennen Sie Trends.
+      </p>
+      <div class="welcome-actions">
+        <a class="btn btn-secondary" href="index.html">Zur Übersicht</a>
+        <a class="btn btn-secondary" href="dashboard.html">Zum Dashboard</a>
+      </div>
+    </header>
+
+    <main class="app-main risk-monitor-main" aria-live="polite">
+      <section class="risk-overview" aria-labelledby="risk-overview-title" data-visible-for="partner,associate">
+        <header class="risk-overview__header">
+          <div>
+            <h2 id="risk-overview-title">Aktuelle Risikostruktur</h2>
+            <p class="risk-overview__description">
+              Die Einordnung basiert auf einer Einschätzung von Eintrittswahrscheinlichkeit und Auswirkung pro Verfahren.
+              Filter und Heatmap aktualisieren sich sofort bei jeder Eingabe.
+            </p>
+          </div>
+          <div class="risk-overview__meta" role="status" aria-live="polite">
+            <span id="risk-last-update-label" class="risk-overview__timestamp">Aktualisiert: –</span>
+          </div>
+        </header>
+
+        <div class="risk-summary" role="list">
+          <article class="risk-summary__card" role="listitem" aria-labelledby="risk-total-label">
+            <p id="risk-total-label" class="risk-summary__metric">Bewertete Mandate</p>
+            <p id="risk-total-value" class="risk-summary__value">0</p>
+            <p class="risk-summary__footnote">Bezogen auf die aktuelle Filterung</p>
+          </article>
+          <article class="risk-summary__card" role="listitem" aria-labelledby="risk-critical-label">
+            <p id="risk-critical-label" class="risk-summary__metric">Kritische Fälle</p>
+            <p id="risk-critical-value" class="risk-summary__value">0</p>
+            <p class="risk-summary__footnote">Score ≥ 9, bezogen auf die Filterauswahl</p>
+          </article>
+          <article class="risk-summary__card" role="listitem" aria-labelledby="risk-deadline-label">
+            <p id="risk-deadline-label" class="risk-summary__metric">Fristen ≤ 14 Tage</p>
+            <p id="risk-deadline-value" class="risk-summary__value">0</p>
+            <p class="risk-summary__footnote">Anzahl innerhalb der gefilterten Mandate</p>
+          </article>
+        </div>
+
+        <form class="risk-filters" aria-label="Risikoanalyse filtern" novalidate>
+          <div class="risk-filter">
+            <label class="risk-filter__label" for="risk-search">Schnellsuche</label>
+            <input
+              type="search"
+              id="risk-search"
+              name="search"
+              placeholder="Nach Mandant, Aktenzeichen oder Stichwort suchen"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <div class="risk-filter">
+            <label class="risk-filter__label" for="risk-owner-filter">Verantwortlich</label>
+            <select id="risk-owner-filter" name="owner">
+              <option value="">Alle Teams</option>
+            </select>
+          </div>
+          <div class="risk-filter">
+            <label class="risk-filter__label" for="risk-stage-filter">Verfahrensstand</label>
+            <select id="risk-stage-filter" name="stage">
+              <option value="">Alle Stände</option>
+            </select>
+          </div>
+          <div class="risk-filter">
+            <label class="risk-filter__label" for="risk-level-filter">Risikostufe</label>
+            <select id="risk-level-filter" name="level">
+              <option value="">Alle Stufen</option>
+              <option value="critical">Kritisch</option>
+              <option value="high">Hoch</option>
+              <option value="medium">Mittel</option>
+              <option value="low">Niedrig</option>
+            </select>
+          </div>
+        </form>
+
+        <section class="risk-matrix" aria-labelledby="risk-matrix-title" role="region">
+          <div class="risk-matrix__header">
+            <div>
+              <h3 id="risk-matrix-title">Heatmap nach Eintritt &amp; Auswirkung</h3>
+              <p class="risk-matrix__description">
+                Platzieren Sie die Maus oder den Fokus auf eine Zelle, um Details zu sehen. Stärker eingefärbte Felder kennzeichnen
+                höhere Risiken.
+              </p>
+            </div>
+            <button type="button" class="btn btn-secondary" id="risk-reset-filters" aria-label="Filter zurücksetzen">
+              Filter zurücksetzen
+            </button>
+          </div>
+          <table class="risk-matrix__table">
+            <caption class="visually-hidden">Risiko-Heatmap nach Eintrittswahrscheinlichkeit und Auswirkung</caption>
+            <thead>
+              <tr>
+                <th scope="col">Auswirkung ↓ / Eintritt →</th>
+                <th scope="col">Niedrig</th>
+                <th scope="col">Mittel</th>
+                <th scope="col">Hoch</th>
+              </tr>
+            </thead>
+            <tbody id="risk-matrix-body"></tbody>
+          </table>
+        </section>
+
+        <section class="risk-detail" aria-labelledby="risk-detail-title">
+          <header class="risk-detail__header">
+            <div>
+              <h3 id="risk-detail-title">Gefilterte Mandate</h3>
+              <p id="risk-detail-summary" class="risk-detail__summary" role="status"></p>
+            </div>
+            <button type="button" class="btn" id="risk-export-button">CSV-Export</button>
+          </header>
+          <div class="table-wrapper" role="region" aria-live="polite" aria-labelledby="risk-detail-title">
+            <table class="risk-detail__table">
+              <thead>
+                <tr>
+                  <th scope="col">Akte</th>
+                  <th scope="col">Mandant</th>
+                  <th scope="col">Verantwortlich</th>
+                  <th scope="col">Stand</th>
+                  <th scope="col">Eintritt</th>
+                  <th scope="col">Auswirkung</th>
+                  <th scope="col">Score</th>
+                  <th scope="col">Nächste Frist</th>
+                  <th scope="col">Nächster Schritt</th>
+                </tr>
+              </thead>
+              <tbody id="risk-detail-table-body"></tbody>
+            </table>
+          </div>
+          <p id="risk-empty-state" class="risk-empty-state" hidden>
+            Keine Mandate entsprechen derzeit der Filterauswahl. Bitte passen Sie die Filterung an.
+          </p>
+        </section>
+
+        <section class="risk-briefing" aria-labelledby="risk-briefing-title">
+          <h3 id="risk-briefing-title">Briefing &amp; empfohlene Maßnahmen</h3>
+          <div id="risk-briefing-content" class="risk-briefing__content"></div>
+        </section>
+      </section>
+
+      <section class="role-access-message" data-visible-for="assistant,accounting">
+        <h2>Risikoprüfung nur für Verfahrensverantwortliche</h2>
+        <p>
+          Dieses Modul richtet sich an Partner:innen und Associates, die aktiv Mandate steuern. Wechseln Sie oben die Rolle,
+          um die Heatmap und Detailtabelle einzublenden.
+        </p>
+      </section>
+    </main>
+
+    <div
+      id="global-error-overlay"
+      class="error-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="error-overlay-title"
+      aria-describedby="error-overlay-message"
+      hidden
+    >
+      <div class="error-overlay__content" role="document">
+        <header class="error-overlay__header">
+          <h2 id="error-overlay-title">Ein unerwarteter Fehler ist aufgetreten</h2>
+          <button
+            type="button"
+            class="error-overlay__close"
+            aria-label="Fehlermeldung schließen"
+            data-error-action="dismiss"
+          >
+            ×
+          </button>
+        </header>
+        <div id="error-overlay-message" class="error-overlay__message"></div>
+        <details class="error-overlay__details">
+          <summary>Technische Details einblenden</summary>
+          <pre id="error-overlay-details"></pre>
+        </details>
+        <footer class="error-overlay__footer">
+          <button type="button" class="btn" data-error-action="reload">
+            Seite neu laden
+          </button>
+          <button type="button" class="btn btn-secondary" data-error-action="dismiss">
+            Schließen
+          </button>
+        </footer>
+      </div>
+    </div>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/risk-monitor.js" type="module"></script>
+  </body>
+</html>
