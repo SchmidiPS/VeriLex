@@ -1509,6 +1509,17 @@ body {
   cursor: not-allowed;
 }
 
+.document-entry__action-btn[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.document-entry__access-note {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
 .document-empty-state {
   margin: 0;
   padding: 1.5rem;

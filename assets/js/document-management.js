@@ -1,4 +1,12 @@
 import { overlayInstance } from './app.js';
+import { getRoleDefinition, readStoredRole } from './auth-utils.js';
+
+const DEFAULT_PERMISSIONS = Object.freeze({
+  view: ['partner', 'associate', 'assistant'],
+  manage: ['partner', 'associate', 'assistant'],
+});
+
+const ACCESS_ACTIONS = Object.freeze(['view', 'manage']);
 
 const dropzone = document.getElementById('document-dropzone');
 const selectFilesButton = document.getElementById('document-select-files');
@@ -21,6 +29,146 @@ let viewerVisible = false;
 let previousBodyOverflow = '';
 let activeViewerDocumentId = null;
 
+function normalizeRoleId(roleId) {
+  return (roleId ?? '').toString().trim().toLowerCase();
+}
+
+function createDefaultPermissions() {
+  return {
+    view: [...DEFAULT_PERMISSIONS.view],
+    manage: [...DEFAULT_PERMISSIONS.manage],
+  };
+}
+
+function normalizePermissions(permissions) {
+  if (!permissions || typeof permissions !== 'object') {
+    return createDefaultPermissions();
+  }
+
+  const normalized = {};
+
+  ACCESS_ACTIONS.forEach((action) => {
+    const list = Array.isArray(permissions[action])
+      ? permissions[action]
+      : [];
+
+    const normalizedList = Array.from(
+      new Set(
+        list
+          .map((roleId) => normalizeRoleId(roleId))
+          .filter((roleId) => roleId && roleId !== 'none')
+      )
+    );
+
+    normalized[action] =
+      normalizedList.length > 0
+        ? normalizedList
+        : [...DEFAULT_PERMISSIONS[action]];
+  });
+
+  return normalized;
+}
+
+function clonePermissions(permissions) {
+  const normalized = normalizePermissions(permissions);
+  return {
+    view: [...normalized.view],
+    manage: [...normalized.manage],
+  };
+}
+
+function normalizeDocument(entry) {
+  const normalized = { ...entry };
+  normalized.id = entry.id ?? createDocumentId();
+  normalized.permissions = clonePermissions(entry.permissions);
+  return normalized;
+}
+
+function cloneDocument(entry) {
+  const normalized = normalizeDocument(entry);
+  return {
+    ...normalized,
+    permissions: clonePermissions(normalized.permissions),
+  };
+}
+
+function getActiveRoleId() {
+  const apiRole = window.verilexRoleAccess?.getActiveRole?.();
+  if (apiRole) {
+    return normalizeRoleId(apiRole);
+  }
+
+  const storedRole = readStoredRole();
+  if (storedRole) {
+    return normalizeRoleId(storedRole);
+  }
+
+  return DEFAULT_PERMISSIONS.view[0];
+}
+
+function getActiveRoleDefinition() {
+  return getRoleDefinition(getActiveRoleId());
+}
+
+function getAllowedRoles(doc, action) {
+  const permissions = doc?.permissions ?? DEFAULT_PERMISSIONS;
+  const list = permissions[action];
+  if (Array.isArray(list) && list.length > 0) {
+    return list.slice();
+  }
+
+  return [...DEFAULT_PERMISSIONS[action]];
+}
+
+function canPerformAction(doc, action) {
+  const allowedRoles = getAllowedRoles(doc, action);
+  if (allowedRoles.includes('all')) {
+    return true;
+  }
+
+  const activeRole = getActiveRoleId();
+  return allowedRoles.includes(activeRole);
+}
+
+function describeAllowedRoles(doc, action) {
+  const allowedRoles = getAllowedRoles(doc, action);
+  if (allowedRoles.includes('all')) {
+    return 'Alle Rollen';
+  }
+
+  return allowedRoles
+    .map((roleId) => getRoleDefinition(roleId).label)
+    .join(', ');
+}
+
+function showPermissionDenied(action, doc) {
+  const actionLabel = action === 'manage' ? 'verwalten' : 'anzeigen';
+  const activeRole = getActiveRoleDefinition();
+  const allowedDescription = describeAllowedRoles(doc, action);
+  const documentName = doc?.name ?? 'dieses Dokument';
+
+  if (overlayInstance?.show) {
+    overlayInstance.show({
+      title: 'Zugriff verweigert',
+      message: `Die Rolle "${activeRole.label}" darf ${documentName} derzeit nicht ${actionLabel}.`,
+      details: `Berechtigte Rollen: ${allowedDescription || 'Keine Rollen freigeschaltet'}.`,
+    });
+  } else {
+    window.alert(
+      `Sie besitzen keine Berechtigung, ${documentName} zu ${actionLabel}. Erlaubt für: ${allowedDescription}.`
+    );
+  }
+}
+
+function ensureDocumentAccess(doc, action) {
+  if (canPerformAction(doc, action)) {
+    return true;
+  }
+
+  showPermissionDenied(action, doc);
+  return false;
+}
+
 function createDocumentId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -39,10 +187,7 @@ function parseSeedData() {
     const raw = dataEl.textContent ?? '[]';
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      return parsed.map((entry) => ({
-        ...entry,
-        id: entry.id ?? createDocumentId(),
-      }));
+      return parsed.map((entry) => normalizeDocument(entry));
     }
   } catch (error) {
     console.error('Seed-Dokumente konnten nicht geladen werden.', error);
@@ -188,6 +333,10 @@ function openDocumentViewer(documentId) {
       title: 'Dokument nicht gefunden',
       message: 'Das angeforderte Dokument steht nicht mehr zur Verfügung.',
     });
+    return;
+  }
+
+  if (!ensureDocumentAccess(doc, 'view')) {
     return;
   }
 
@@ -352,7 +501,20 @@ function renderDocument(doc) {
     notes.textContent = doc.notes;
   }
 
-  meta.append(title, details, badges);
+  const canView = canPerformAction(doc, 'view');
+  const canManage = canPerformAction(doc, 'manage');
+
+  const accessNote = document.createElement('p');
+  accessNote.className = 'document-entry__access-note';
+  if (canManage) {
+    accessNote.textContent = 'Sie besitzen Vollzugriff auf dieses Dokument.';
+  } else if (canView) {
+    accessNote.textContent = 'Aktuell sind nur Leserechte für dieses Dokument verfügbar.';
+  } else {
+    accessNote.textContent = 'Mit der aktiven Rolle ist kein Zugriff möglich.';
+  }
+
+  meta.append(title, details, badges, accessNote);
   if (notes) {
     meta.appendChild(notes);
   }
@@ -365,14 +527,32 @@ function renderDocument(doc) {
   viewButton.className = 'document-entry__action-btn document-entry__action-btn--primary';
   viewButton.textContent = 'Anzeigen';
   viewButton.setAttribute('aria-label', `${doc.name} in der Vorschau öffnen`);
-  viewButton.addEventListener('click', () => openDocumentViewer(doc.id));
+  if (!canView) {
+    viewButton.setAttribute('aria-disabled', 'true');
+    viewButton.title = 'Diese Rolle hat keine Berechtigung zur Vorschau.';
+  }
+  viewButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    if (ensureDocumentAccess(doc, 'view')) {
+      openDocumentViewer(doc.id);
+    }
+  });
 
   const removeButton = document.createElement('button');
   removeButton.type = 'button';
   removeButton.className = 'document-entry__action-btn document-entry__action-btn--danger';
   removeButton.textContent = 'Entfernen';
   removeButton.setAttribute('aria-label', `${doc.name} aus der Liste entfernen`);
-  removeButton.addEventListener('click', () => removeDocument(doc.id));
+  if (!canManage) {
+    removeButton.setAttribute('aria-disabled', 'true');
+    removeButton.title = 'Diese Rolle kann das Dokument nicht verwalten.';
+  }
+  removeButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    if (ensureDocumentAccess(doc, 'manage')) {
+      removeDocument(doc.id);
+    }
+  });
 
   actions.append(viewButton, removeButton);
 
@@ -407,6 +587,29 @@ function renderDocumentList() {
   summaryEl.textContent = `${documents.length} Dokumente · Gesamtgröße ${formatFileSize(totalSize)}`;
 }
 
+function handleRoleChanged(event) {
+  renderDocumentList();
+
+  if (!viewerVisible) {
+    return;
+  }
+
+  const activeDoc = documents.find((doc) => doc.id === activeViewerDocumentId);
+  if (!activeDoc) {
+    closeDocumentViewer();
+    return;
+  }
+
+  if (!canPerformAction(activeDoc, 'view')) {
+    closeDocumentViewer();
+    overlayInstance?.show?.({
+      title: 'Zugriff geändert',
+      message:
+        'Ihre aktuelle Rolle verfügt nicht mehr über die Berechtigung, dieses Dokument anzuzeigen. Die Vorschau wurde beendet.',
+    });
+  }
+}
+
 function updateProcessingInfo(message) {
   if (!processingInfoEl) {
     return;
@@ -417,11 +620,18 @@ function updateProcessingInfo(message) {
 
 function removeDocument(id) {
   const target = documents.find((doc) => doc.id === id);
-  if (target) {
-    cleanupDocumentResources(target);
-    if (viewerVisible && activeViewerDocumentId === id) {
-      closeDocumentViewer();
-    }
+  if (!target) {
+    return;
+  }
+
+  if (!ensureDocumentAccess(target, 'manage')) {
+    updateProcessingInfo('Aktion abgebrochen: fehlende Berechtigung.');
+    return;
+  }
+
+  cleanupDocumentResources(target);
+  if (viewerVisible && activeViewerDocumentId === id) {
+    closeDocumentViewer();
   }
 
   documents = documents.filter((doc) => doc.id !== id);
@@ -435,7 +645,7 @@ function resetDocuments() {
     closeDocumentViewer();
   }
 
-  documents = seedDocuments.map((doc) => ({ ...doc }));
+  documents = seedDocuments.map((doc) => cloneDocument(doc));
   renderDocumentList();
   updateProcessingInfo('Liste wurde auf den Demo-Ausgangszustand zurückgesetzt.');
 }
@@ -451,6 +661,7 @@ function createDocumentFromFile(file) {
     status: 'Upload abgeschlossen (Mock)',
     tags: [],
     notes: 'Lokale Datei – keine Übertragung erfolgt.',
+    permissions: createDefaultPermissions(),
     file,
   };
 
@@ -462,7 +673,7 @@ function createDocumentFromFile(file) {
     }
   }
 
-  return doc;
+  return normalizeDocument(doc);
 }
 
 function readPreviewForFile(doc) {
@@ -595,11 +806,12 @@ function attachEventListeners() {
 
 function init() {
   seedDocuments = parseSeedData();
-  documents = seedDocuments.map((doc) => ({ ...doc }));
+  documents = seedDocuments.map((doc) => cloneDocument(doc));
   renderDocumentList();
   updateProcessingInfo('Bereit für neue Uploads.');
   registerViewerEvents();
   attachEventListeners();
+  window.addEventListener('verilex:role-changed', handleRoleChanged);
 }
 
 init();

@@ -94,8 +94,8 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 26. **KI-Assistent (Mock)** – Integriere einen Chat-Bereich, der einfache Platzhalter-Antworten liefert.
     Status: ✅ erledigt – 2025-11-10
 
-27. **Rechteprüfung für Dokumente** – Prüfe bei jedem Zugriff, ob der aktuelle Nutzer laut Profil Rechte auf das Dokument hat (Mock-Prüfung).  
-    Status: ⬜
+27. **Rechteprüfung für Dokumente** – Prüfe bei jedem Zugriff, ob der aktuelle Nutzer laut Profil Rechte auf das Dokument hat (Mock-Prüfung).
+    Status: ✅ erledigt – 2025-11-10
 
 28. **Pflege dieser ToDo-Liste** – Halte diese Datei aktuell, markiere erledigte Aufgaben und füge neue hinzu.  
     Status: ⬜
