@@ -170,6 +170,7 @@ prefersDarkMediaQuery.addEventListener('change', (event) => {
 const NAVIGATION_LINKS = [
   { label: 'Start', href: 'index.html', roles: ['all'] },
   { label: 'Dashboard', href: 'dashboard.html', roles: ['all'] },
+  { label: 'Risikomonitor', href: 'risk-monitor.html', roles: ['partner', 'associate'] },
   { label: 'Mandats-Wizard', href: 'mandate-wizard.html', roles: ['partner', 'associate'] },
   { label: 'Dokumente', href: 'document-management.html', roles: ['partner', 'associate', 'assistant'] },
   { label: 'Mandantenportal', href: 'mandantenportal.html', roles: ['all'] },
