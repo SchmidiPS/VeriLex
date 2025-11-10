@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Compliance-Checkliste</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#1f3c88" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Kanzlei-Compliance &amp; Qualitätscheck</h1>
+      <p class="app-subtitle">
+        Überwachen Sie Kanzleivorgaben, dokumentieren Sie Prüfungen und behalten Sie kritische Punkte im Blick.
+      </p>
+      <div class="welcome-actions">
+        <a class="btn btn-secondary" href="dashboard.html">Zum Dashboard</a>
+        <a class="btn btn-secondary" href="risk-monitor.html">Risikomonitor öffnen</a>
+      </div>
+    </header>
+
+    <main class="app-main compliance-main" aria-live="polite">
+      <section class="compliance-module" aria-labelledby="compliance-module-title" data-visible-for="partner,associate,assistant">
+        <header class="compliance-module__header">
+          <div>
+            <h2 id="compliance-module-title">Aktuelle Prüfaufträge</h2>
+            <p class="compliance-module__description">
+              Filtern Sie nach Themengebiet, Verantwortlichen oder Prüfrhythmus. Jeder Eintrag lässt sich direkt abhaken, die
+              Fortschrittsanzeige reagiert sofort.
+            </p>
+          </div>
+          <div class="compliance-module__meta" role="status" aria-live="polite">
+            <span id="compliance-last-sync">Letzte Aktualisierung: gerade eben</span>
+          </div>
+        </header>
+
+        <section class="compliance-summary" aria-labelledby="compliance-summary-title" role="region">
+          <div class="compliance-summary__header">
+            <h3 id="compliance-summary-title">Kennzahlen</h3>
+            <button type="button" class="btn btn-secondary" id="compliance-export" aria-label="Gefilterte Maßnahmen exportieren">
+              Maßnahmen exportieren
+            </button>
+          </div>
+          <div class="compliance-summary__grid" role="list">
+            <article class="compliance-summary__card" role="listitem" aria-labelledby="compliance-total-label">
+              <p id="compliance-total-label" class="compliance-summary__metric">Gesamtpunkte</p>
+              <p id="compliance-total-value" class="compliance-summary__value">0</p>
+              <p class="compliance-summary__footnote">inkl. aller gefilterten Prüfpunkte</p>
+            </article>
+            <article class="compliance-summary__card" role="listitem" aria-labelledby="compliance-critical-label">
+              <p id="compliance-critical-label" class="compliance-summary__metric">Kritische offen</p>
+              <p id="compliance-critical-value" class="compliance-summary__value">0</p>
+              <p class="compliance-summary__footnote">Risiko &ge; Hoch ohne Abhaken</p>
+            </article>
+            <article class="compliance-summary__card" role="listitem" aria-labelledby="compliance-upcoming-label">
+              <p id="compliance-upcoming-label" class="compliance-summary__metric">Fälligkeiten &le; 7 Tage</p>
+              <p id="compliance-upcoming-value" class="compliance-summary__value">0</p>
+              <p class="compliance-summary__footnote">inklusive Wiedervorlagen</p>
+            </article>
+            <article class="compliance-summary__card" role="listitem" aria-labelledby="compliance-progress-label">
+              <p id="compliance-progress-label" class="compliance-summary__metric">Gesamtfortschritt</p>
+              <p id="compliance-progress-value" class="compliance-summary__value">0%</p>
+              <p class="compliance-summary__footnote">Über alle Prüfpunkte hinweg</p>
+            </article>
+          </div>
+        </section>
+
+        <form class="compliance-filters" aria-label="Compliance-Filters" novalidate>
+          <div class="compliance-filter">
+            <label class="compliance-filter__label" for="compliance-search">Suche</label>
+            <input
+              type="search"
+              id="compliance-search"
+              name="search"
+              placeholder="Nach Thema, Stichwort oder Verantwortlichem suchen"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <div class="compliance-filter">
+            <label class="compliance-filter__label" for="compliance-area-filter">Themengebiet</label>
+            <select id="compliance-area-filter" name="area">
+              <option value="">Alle Bereiche</option>
+            </select>
+          </div>
+          <div class="compliance-filter">
+            <label class="compliance-filter__label" for="compliance-owner-filter">Verantwortlich</label>
+            <select id="compliance-owner-filter" name="owner">
+              <option value="">Alle Teams</option>
+            </select>
+          </div>
+          <div class="compliance-filter">
+            <label class="compliance-filter__label" for="compliance-frequency-filter">Prüfrhythmus</label>
+            <select id="compliance-frequency-filter" name="frequency">
+              <option value="">Alle Intervalle</option>
+              <option value="case">je Mandat</option>
+              <option value="monthly">monatlich</option>
+              <option value="quarterly">quartalsweise</option>
+              <option value="semiannual">halbjährlich</option>
+            </select>
+          </div>
+          <div class="compliance-filter">
+            <label class="compliance-filter__label" for="compliance-risk-filter">Risiko</label>
+            <select id="compliance-risk-filter" name="risk">
+              <option value="">Alle Stufen</option>
+              <option value="hoch">Hoch</option>
+              <option value="mittel">Mittel</option>
+              <option value="niedrig">Niedrig</option>
+            </select>
+          </div>
+          <div class="compliance-filter compliance-filter--actions">
+            <button type="button" class="btn btn-secondary" id="compliance-reset">Filter zurücksetzen</button>
+          </div>
+        </form>
+
+        <section class="compliance-progress" aria-labelledby="compliance-progress-title">
+          <div class="compliance-progress__header">
+            <h3 id="compliance-progress-title">Fortschritt</h3>
+            <p id="compliance-progress-summary" class="compliance-progress__summary" role="status"></p>
+          </div>
+          <div class="compliance-progress__bar" aria-hidden="true">
+            <div id="compliance-progress-bar" class="compliance-progress__bar-value" style="width: 0%"></div>
+          </div>
+        </section>
+
+        <div class="compliance-layout">
+          <section class="compliance-list" aria-labelledby="compliance-list-title">
+            <h3 id="compliance-list-title">Prüfpunkte</h3>
+            <p id="compliance-list-summary" class="compliance-list__summary" role="status"></p>
+            <div id="compliance-list" class="compliance-list__container" role="list"></div>
+            <p id="compliance-empty-state" class="compliance-empty-state" hidden>
+              Keine Prüfpunkte entsprechen der aktuellen Filterung. Bitte passen Sie die Auswahl an.
+            </p>
+          </section>
+
+          <aside class="compliance-detail" aria-labelledby="compliance-detail-title" role="complementary">
+            <h3 id="compliance-detail-title">Protokoll &amp; Hinweise</h3>
+            <article id="compliance-detail-content" class="compliance-detail__card" aria-live="polite">
+              <h4 class="compliance-detail__headline">Eintrag wählen</h4>
+              <p class="compliance-detail__description">
+                Wählen Sie einen Prüfpunkt aus der Liste, um Details, Wiedervorlagen und empfohlene Maßnahmen einzusehen.
+              </p>
+            </article>
+          </aside>
+        </div>
+
+        <section class="compliance-upcoming" aria-labelledby="compliance-upcoming-title">
+          <div class="compliance-upcoming__header">
+            <h3 id="compliance-upcoming-title">Anstehende Wiedervorlagen</h3>
+            <p class="compliance-upcoming__description">
+              Sortiert nach Dringlichkeit. Überfällige Einträge werden hervorgehoben.
+            </p>
+          </div>
+          <ol id="compliance-upcoming-list" class="compliance-upcoming__list"></ol>
+        </section>
+      </section>
+
+      <section class="role-access-message" data-visible-for="accounting">
+        <h2>Compliance-Checkliste nur für Fachbereiche</h2>
+        <p>
+          Dieses Modul richtet sich an Jurist:innen und Assistenzteams, die Mandatsannahmen und Datenschutzprozesse prüfen. Für
+          die Buchhaltung genügt das Reporting im Dashboard. Wechseln Sie oben die Rolle, um Einsicht zu erhalten.
+        </p>
+      </section>
+    </main>
+
+    <script src="assets/js/app.js" type="module"></script>
+    <script src="assets/js/compliance-checklist.js" type="module"></script>
+  </body>
+</html>

@@ -105,3 +105,6 @@ Beim Umsetzen jeder Aufgabe beachtest du folgende Richtlinien:
 
 30. **Risikomonitor für Mandate** – Erstelle eine Heatmap-Ansicht der Mandatsrisiken mit Filtern, Detailtabelle und Exportfunktion.
     Status: ✅ erledigt – 2025-11-10
+
+31. **Compliance-Checkliste & Prüfplan** – Ergänze ein Modul, das wiederkehrende Kanzlei-Compliance-Prüfpunkte bündelt, Filter und Fortschrittsanzeige bietet sowie eine exportierbare Maßnahmenliste erzeugt.
+    Status: ✅ erledigt – 2025-11-10
