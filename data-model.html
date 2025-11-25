@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriLex – Zentrales Datenmodell</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#1f3c88" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Zentrales Datenmodell</h1>
+      <p class="app-subtitle">
+        Einheitliches Schema für Fälle, Dokumente, Zeiten, Rechnungen, Compliance und Kalender-Ereignisse.
+      </p>
+    </header>
+
+    <main class="app-main data-model-main" aria-live="polite">
+      <section class="data-model-intro">
+        <div class="data-model-summary">
+          <div>
+            <p class="eyebrow">Version 1 · Frontend-Mock</p>
+            <h2>Gemeinsame Entitäten, saubere Beziehungen</h2>
+            <p>
+              Das Datenmodell bündelt alle Demo-Module auf einer konsistenten Basis. Es definiert Schlüssel,
+              Beziehungen und Enumerationen, sodass spätere Module (Store, Event-Bus, Login) direkt darauf aufbauen können.
+            </p>
+            <ul class="data-model-highlights">
+              <li>8 Kern-Entitäten mit Primärschlüsseln und Indizes</li>
+              <li>Standard-Enumerationen für Status, Priorität und Terminarten</li>
+              <li>Beispieldatensatz für lokale Tests und Seedings</li>
+            </ul>
+          </div>
+          <aside class="data-model-meta">
+            <div class="meta-card">
+              <p class="meta-label">Primärschlüssel</p>
+              <p class="meta-value">UUID / Kurz-ID</p>
+            </div>
+            <div class="meta-card">
+              <p class="meta-label">Datumsformat</p>
+              <p class="meta-value">ISO-8601</p>
+            </div>
+            <div class="meta-card">
+              <p class="meta-label">Standardwährung</p>
+              <p class="meta-value">EUR</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section aria-labelledby="entity-section-title" class="data-model-section">
+        <header class="section-header">
+          <div>
+            <p class="eyebrow">Schema</p>
+            <h2 id="entity-section-title">Entitäten & Felder</h2>
+            <p class="section-description">
+              Felder, Pflichtattribute und Beziehungen der wichtigsten Objekte. Beziehungen zeigen, wie die Module später verknüpft werden.
+            </p>
+          </div>
+        </header>
+        <div id="entity-grid" class="data-model-grid" role="list"></div>
+      </section>
+
+      <section aria-labelledby="enum-section-title" class="data-model-section">
+        <header class="section-header">
+          <div>
+            <p class="eyebrow">Konstanten</p>
+            <h2 id="enum-section-title">Enumerationen & globale Regeln</h2>
+            <p class="section-description">
+              Vereinheitlichte Statuswerte und Formate verhindern Inkonsistenzen zwischen Modulen.
+            </p>
+          </div>
+        </header>
+        <div class="data-model-grid" id="enum-grid" role="list"></div>
+        <div class="global-rules" id="global-rules" role="list"></div>
+      </section>
+
+      <section aria-labelledby="sample-section-title" class="data-model-section">
+        <header class="section-header">
+          <div>
+            <p class="eyebrow">Seed-Daten</p>
+            <h2 id="sample-section-title">Konsistenter Beispieldatensatz</h2>
+            <p class="section-description">
+              Die Testdaten sind verknüpft (z. B. TimeEntries verweisen auf Cases und Users) und dienen als Grundlage für den kommenden Store.
+            </p>
+          </div>
+        </header>
+        <div class="sample-grid" id="sample-grid" role="list"></div>
+      </section>
+    </main>
+
+    <script src="assets/js/data-model.js"></script>
+    <script>
+      (function renderDataModelPage() {
+        const model = window.verilexDataModel;
+        if (!model) return;
+
+        const entityGrid = document.getElementById("entity-grid");
+        Object.values(model.entities).forEach((entity) => {
+          const card = document.createElement("article");
+          card.className = "entity-card";
+          card.setAttribute("role", "listitem");
+
+          const relationshipText = entity.relationships
+            ? entity.relationships.map((rel) => `${rel.type} → ${rel.target}`).join(" · ")
+            : "Keine Beziehungen";
+
+          card.innerHTML = `
+            <header class="entity-card__header">
+              <div>
+                <p class="eyebrow">${entity.primaryKey}</p>
+                <h3>${entity.name}</h3>
+                <p class="entity-card__description">${entity.description}</p>
+              </div>
+              <div class="badge">${entity.fields.length} Felder</div>
+            </header>
+            <p class="entity-card__relationships">${relationshipText}</p>
+            <div class="entity-fields">
+              ${entity.fields
+                .map(
+                  (field) => `
+                    <div class="entity-field">
+                      <div class="entity-field__name">${field.name}</div>
+                      <div class="entity-field__type">${field.type}${field.enum ? ` · ${field.enum}` : ""}</div>
+                      <div class="entity-field__flags">${field.required ? "Pflichtfeld" : "Optional"}</div>
+                      <div class="entity-field__description">${field.description}</div>
+                    </div>
+                  `
+                )
+                .join("")}
+            </div>
+          `;
+
+          if (entity.indexes && entity.indexes.length > 0) {
+            const indexList = document.createElement("p");
+            indexList.className = "entity-card__indexes";
+            const labels = entity.indexes.map((idx) => `${idx.name}${idx.unique ? " (unique)" : ""}`);
+            indexList.textContent = `Indizes: ${labels.join(", ")}`;
+            card.appendChild(indexList);
+          }
+
+          entityGrid.appendChild(card);
+        });
+
+        const enumGrid = document.getElementById("enum-grid");
+        Object.entries(model.enums).forEach(([name, values]) => {
+          const card = document.createElement("article");
+          card.className = "enum-card";
+          card.setAttribute("role", "listitem");
+          card.innerHTML = `
+            <header class="enum-card__header">
+              <p class="eyebrow">Enum</p>
+              <h3>${name}</h3>
+            </header>
+            <ul class="chip-list">
+              ${values.map((value) => `<li class="chip">${value}</li>`).join("")}
+            </ul>
+          `;
+          enumGrid.appendChild(card);
+        });
+
+        const rulesContainer = document.getElementById("global-rules");
+        Object.entries(model.globalRules).forEach(([key, value]) => {
+          const card = document.createElement("article");
+          card.className = "rule-card";
+          card.setAttribute("role", "listitem");
+          card.innerHTML = `
+            <p class="rule-card__label">${key}</p>
+            <p class="rule-card__value">${value}</p>
+          `;
+          rulesContainer.appendChild(card);
+        });
+
+        const sampleGrid = document.getElementById("sample-grid");
+        const sampleData = model.sampleData;
+        Object.entries(sampleData).forEach(([key, items]) => {
+          const card = document.createElement("article");
+          card.className = "sample-card";
+          card.setAttribute("role", "listitem");
+
+          const preview = Array.isArray(items)
+            ? items.slice(0, 2)
+            : [];
+
+          card.innerHTML = `
+            <header class="sample-card__header">
+              <p class="eyebrow">Sample</p>
+              <h3>${key}</h3>
+              <div class="badge">${Array.isArray(items) ? items.length : 0} Einträge</div>
+            </header>
+            <div class="sample-preview">
+              ${preview
+                .map((entry) => {
+                  const id = entry.id || entry.caseNumber || "Eintrag";
+                  const title = entry.title || entry.name || entry.caseNumber || "Detail";
+                  return `<div class="sample-preview__item"><span>${id}</span><strong>${title}</strong></div>`;
+                })
+                .join("")}
+            </div>
+          `;
+          sampleGrid.appendChild(card);
+        });
+      })();
+    </script>
+  </body>
+</html>

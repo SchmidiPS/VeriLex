@@ -171,6 +171,7 @@ Die Demo‐Anwendung **VeriLex** soll von einer Sammlung isolierter Funktionsmoc
 ## Neue To‑Do‑Liste
 
 1. **Zentrales Datenmodell definieren:** Entwickle ein Schema für die gemeinsamen Entitäten (Case, Client, User, Document, TimeEntry, Invoice, ComplianceItem, Appointment).  Lege Schlüssel, Beziehungen und notwendige Felder fest und dokumentiere diese.  Berücksichtige, dass ein `TimeEntry` zu einem Fall und einem Nutzer gehört, eine Rechnung mehrere Zeit­einträge aggregiert und Compliance‑Tasks Fristen für den Kalender erzeugen.  Das Datenmodell dient als Grundlage für alle weiteren Anpassungen.
+   Status: ✅ erledigt – 2025-11-25
 
 2. **Zentralen Store mit CRUD‑API und Event‑Bus implementieren:** Erstelle ein JavaScript‑Modul, das die Entitäten verwaltet, CRUD‑Funktionen bereitstellt und Änderungen per Events (Publish/Subscribe) an andere Module meldet.  Die Daten können zunächst im Browser (z. B. mit `localStorage`) persistiert werden, sollten aber über eine klare API zugänglich sein.  Beim Hinzufügen oder Ändern von Datensätzen werden passende Events wie `caseAdded` oder `invoiceUpdated` ausgelöst.  Spätere Erweiterungen auf ein Backend sollen dabei einfach möglich sein.
 
