@@ -1,6 +1,6 @@
 import { overlayInstance } from './app.js';
-
-const STORAGE_KEY = 'verilex:time-entries';
+import { readMockSession } from './auth-utils.js';
+import { verilexStore } from './store.js';
 
 const form = document.getElementById('time-tracking-form');
 const activityInput = document.getElementById('activity-title');
@@ -23,7 +23,15 @@ if (!form || !activityInput || !caseSelect || !notesInput) {
   console.warn('Time tracking form could not be initialized.');
 }
 
+const ROLE_TO_USER_ID = {
+  partner: 'u-partner',
+  associate: 'u-associate',
+  assistant: 'u-associate',
+  accounting: 'u-accounting',
+};
+
 let entries = [];
+let caseIndex = new Map();
 
 let stopwatchState = 'idle';
 let animationFrameId = null;
@@ -31,12 +39,22 @@ let startHighResTimestamp = 0;
 let accumulatedDurationMs = 0;
 let startedAt = null;
 
-function generateEntryId() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
+function resolveActiveUserId() {
+  const session = readMockSession();
+  const roleId = session?.roleId?.toLowerCase?.() ?? '';
+  return ROLE_TO_USER_ID[roleId] ?? ROLE_TO_USER_ID.associate;
+}
 
-  return `entry-${Math.random().toString(16).slice(2)}-${Date.now()}`;
+function buildCaseIndex(cases) {
+  caseIndex = new Map();
+  cases
+    .filter((item) => item && item.id)
+    .forEach((item) => {
+      caseIndex.set(item.id, {
+        caseNumber: item.caseNumber ?? '',
+        title: item.title ?? '',
+      });
+    });
 }
 
 function setStatus(message, variant = 'info') {
@@ -90,15 +108,20 @@ function formatDateTime(value) {
 }
 
 function formatCaseLabel(entry) {
-  if (!entry.caseNumber) {
+  if (!entry.caseId) {
     return 'Keine Zuordnung';
   }
 
-  if (entry.caseTitle) {
-    return `${entry.caseNumber} – ${entry.caseTitle}`;
+  const info = caseIndex.get(entry.caseId);
+  if (!info) {
+    return 'Unbekannte Akte';
   }
 
-  return entry.caseNumber;
+  if (info.caseNumber && info.title) {
+    return `${info.caseNumber} – ${info.title}`;
+  }
+
+  return info.caseNumber || info.title || 'Unbenannte Akte';
 }
 
 function stopAnimation() {
@@ -171,63 +194,75 @@ function resetStopwatch({ announce = false } = {}) {
   }
 }
 
-function persistEntries() {
-  if (typeof localStorage === 'undefined') {
+function loadCasesIntoSelect() {
+  if (!caseSelect) {
     return;
   }
 
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  } catch (error) {
-    console.error('Zeitbuchungen konnten nicht gespeichert werden.', error);
-    overlayInstance?.show?.({
-      title: 'Speichern nicht möglich',
-      message: 'Die Zeiterfassungsdaten konnten nicht im Browser gespeichert werden.',
-      details: error,
+  const cases = verilexStore.getAll('Case');
+  buildCaseIndex(cases);
+
+  caseSelect.innerHTML = '';
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = 'Keine Zuordnung';
+  caseSelect.append(defaultOption);
+
+  cases
+    .slice()
+    .sort((a, b) => (a.caseNumber || '').localeCompare(b.caseNumber || ''))
+    .forEach((item) => {
+      const option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = item.title
+        ? `${item.caseNumber} – ${item.title}`
+        : item.caseNumber || 'Unbenannte Akte';
+      caseSelect.append(option);
     });
-  }
 }
 
-function loadEntries() {
-  if (typeof localStorage === 'undefined') {
-    entries = [];
-    return;
-  }
+function normalizeTimeEntry(rawEntry) {
+  if (!rawEntry) return null;
 
+  const durationMinutes = Number(rawEntry.durationMinutes);
+  const startedAt = rawEntry.startedAt ?? null;
+  const endedAt = rawEntry.endedAt ?? null;
+  const derivedDuration = (() => {
+    if (Number.isFinite(durationMinutes)) {
+      return Math.max(0, durationMinutes) * 60000;
+    }
+
+    const start = new Date(startedAt).getTime();
+    const end = new Date(endedAt).getTime();
+    if (Number.isFinite(start) && Number.isFinite(end)) {
+      return Math.max(0, end - start);
+    }
+    return 0;
+  })();
+
+  return {
+    id: rawEntry.id,
+    activity: String(rawEntry.activity ?? '').trim() || 'Ohne Titel',
+    caseId: rawEntry.caseId || '',
+    notes: String(rawEntry.notes ?? '').trim(),
+    startedAt,
+    endedAt,
+    durationMs: derivedDuration,
+    createdLabel: endedAt ? `Erfasst am ${formatDateTime(endedAt)}` : '',
+  };
+}
+
+function syncEntriesFromStore() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      entries = [];
-      return;
-    }
-
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      entries = parsed
-        .filter((entry) => typeof entry === 'object' && entry !== null)
-        .map((entry) => {
-          const duration = Number(entry.durationMs);
-          return {
-            id: typeof entry.id === 'string' && entry.id ? entry.id : generateEntryId(),
-            activity: String(entry.activity ?? '').trim() || 'Ohne Titel',
-            caseNumber: String(entry.caseNumber ?? '').trim(),
-            caseTitle: String(entry.caseTitle ?? '').trim(),
-            notes: String(entry.notes ?? '').trim(),
-            startedAt: entry.startedAt ?? null,
-            endedAt: entry.endedAt ?? null,
-            durationMs: Number.isFinite(duration) ? duration : 0,
-            createdLabel: typeof entry.createdLabel === 'string' ? entry.createdLabel : '',
-          };
-        });
-    } else {
-      entries = [];
-    }
+    const rawEntries = verilexStore.getAll('TimeEntry');
+    entries = rawEntries
+      .map(normalizeTimeEntry)
+      .filter((entry) => entry && entry.id);
   } catch (error) {
-    console.error('Gespeicherte Zeiterfassung konnte nicht geladen werden.', error);
-    entries = [];
+    console.error('Zeitbucheinträge konnten nicht aus dem Store geladen werden.', error);
     overlayInstance?.show?.({
-      title: 'Daten konnten nicht geladen werden',
-      message: 'Die gespeicherten Zeitbucheinträge stehen derzeit nicht zur Verfügung.',
+      title: 'Daten nicht verfügbar',
+      message: 'Die Zeiterfassungsdaten konnten nicht geladen werden.',
       details: error,
     });
   }
@@ -330,57 +365,6 @@ function renderEntries() {
   totalDurationEl.textContent = formatDurationSummary(totalDuration);
 }
 
-function upsertCaseOptions() {
-  if (!caseSelect) {
-    return;
-  }
-
-  const dataEl = document.getElementById('time-tracking-case-data');
-  if (!dataEl) {
-    return;
-  }
-
-  try {
-    const raw = dataEl.textContent ?? '[]';
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return;
-    }
-
-    parsed
-      .map((item) => ({
-        caseNumber: String(item.caseNumber ?? '').trim(),
-        title: String(item.title ?? '').trim(),
-      }))
-      .filter((item) => item.caseNumber || item.title)
-      .forEach((item) => {
-        const option = document.createElement('option');
-        option.value = item.caseNumber;
-        option.textContent = item.title
-          ? `${item.caseNumber} – ${item.title}`
-          : item.caseNumber;
-        option.dataset.caseTitle = item.title;
-        caseSelect.appendChild(option);
-      });
-  } catch (error) {
-    console.error('Aktenliste für Zeiterfassung konnte nicht geladen werden.', error);
-    overlayInstance?.show?.({
-      title: 'Fehler beim Laden der Akten',
-      message: 'Die Aktenauswahl für die Zeiterfassung steht derzeit nicht zur Verfügung.',
-      details: error,
-    });
-  }
-}
-
-function getSelectedCaseTitle(caseNumber) {
-  if (!caseNumber || !caseSelect) {
-    return '';
-  }
-
-  const option = Array.from(caseSelect.options).find((item) => item.value === caseNumber);
-  return option?.dataset.caseTitle ?? '';
-}
-
 function handleStart() {
   if (!activityInput) {
     return;
@@ -479,27 +463,42 @@ function handleStop() {
   durationMs = Math.round(Math.max(0, durationMs));
 
   const activity = activityInput?.value.trim() ?? '';
-  const caseNumber = caseSelect?.value ?? '';
+  const caseId = caseSelect?.value ?? '';
   const notes = notesInput?.value.trim() ?? '';
-  const caseTitle = getSelectedCaseTitle(caseNumber);
 
-  const entry = {
-    id: generateEntryId(),
+  const newEntry = {
     activity: activity || 'Ohne Titel',
-    caseNumber,
-    caseTitle,
+    caseId: caseId || null,
+    userId: resolveActiveUserId(),
     notes,
     startedAt: startedAt ? startedAt.toISOString() : finishedAt.toISOString(),
     endedAt: finishedAt.toISOString(),
-    durationMs,
-    createdLabel: `Erfasst am ${formatDateTime(finishedAt)}`,
+    durationMinutes: Math.max(0, Math.round(durationMs / 60000)),
+    billableRate: null,
+    invoiceId: null,
   };
 
-  entries = [entry, ...entries.filter((item) => item && item.id !== entry.id)];
-  persistEntries();
-  renderEntries();
+  try {
+    const saved = verilexStore.addTimeEntry(newEntry);
+    const normalized = normalizeTimeEntry(saved);
+    if (normalized) {
+      entries = [normalized, ...entries.filter((item) => item && item.id !== normalized.id)];
+      renderEntries();
+    }
 
-  setStatus(`Eintrag „${entry.activity}“ wurde gespeichert.`, 'success');
+    const caseLabel = formatCaseLabel({ caseId: saved.caseId });
+    const statusLabel = caseLabel ? ` (${caseLabel})` : '';
+    setStatus(`Eintrag „${saved.activity}“ wurde gespeichert${statusLabel}.`, 'success');
+  } catch (error) {
+    console.error('Zeitbuchung konnte nicht gespeichert werden.', error);
+    overlayInstance?.show?.({
+      title: 'Speichern fehlgeschlagen',
+      message: 'Der Eintrag konnte nicht im zentralen Store abgelegt werden.',
+      details: error,
+    });
+    return;
+  }
+
   resetFormFields();
   resetStopwatch();
   if (metaEl) {
@@ -530,18 +529,36 @@ function handleDelete(event) {
     return;
   }
 
-  entries = entries.filter((entry) => entry.id !== id);
-  persistEntries();
-  renderEntries();
-  setStatus('Eintrag wurde entfernt.', 'info');
+  try {
+    const removed = verilexStore.removeEntity('TimeEntry', id);
+    if (removed) {
+      syncEntriesFromStore();
+      renderEntries();
+      setStatus('Eintrag wurde entfernt.', 'info');
+    }
+  } catch (error) {
+    console.error('Eintrag konnte nicht gelöscht werden.', error);
+    overlayInstance?.show?.({
+      title: 'Löschen fehlgeschlagen',
+      message: 'Der Zeitbucheintrag konnte nicht aus dem Store entfernt werden.',
+      details: error,
+    });
+  }
 }
 
-function handleStorageUpdate(event) {
-  if (event.key && event.key !== STORAGE_KEY) {
+function handleStoreChange(event) {
+  if (!event || !event.entity) {
     return;
   }
-  loadEntries();
-  renderEntries();
+
+  if (event.entity === 'Case') {
+    loadCasesIntoSelect();
+  }
+
+  if (event.entity === 'TimeEntry') {
+    syncEntriesFromStore();
+    renderEntries();
+  }
 }
 
 function init() {
@@ -565,8 +582,8 @@ function init() {
     return;
   }
 
-  upsertCaseOptions();
-  loadEntries();
+  loadCasesIntoSelect();
+  syncEntriesFromStore();
   renderEntries();
   setButtonsState('idle');
 
@@ -576,7 +593,20 @@ function init() {
   stopButton.addEventListener('click', handleStop);
   resetButton.addEventListener('click', handleReset);
   tableBody.addEventListener('click', handleDelete);
-  window.addEventListener('storage', handleStorageUpdate);
+
+  verilexStore.on('storeReady', () => {
+    loadCasesIntoSelect();
+    syncEntriesFromStore();
+    renderEntries();
+  });
+
+  verilexStore.on('storeReset', () => {
+    loadCasesIntoSelect();
+    syncEntriesFromStore();
+    renderEntries();
+  });
+
+  verilexStore.on('storeChanged', handleStoreChange);
 }
 
 init();
