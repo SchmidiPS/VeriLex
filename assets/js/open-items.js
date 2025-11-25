@@ -1,8 +1,3 @@
-const dataElement = document.getElementById('receivables-data');
-if (!dataElement) {
-  console.warn('Receivables data element not found.');
-}
-
 const currencyFormatter = new Intl.NumberFormat('de-DE', {
   style: 'currency',
   currency: 'EUR',
@@ -31,52 +26,90 @@ function parseDate(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function normalizeReceivable(entry) {
-  const normalizedStatus = String(entry.status ?? 'open').toLowerCase();
-  const allowedStatuses = new Set(['open', 'overdue', 'paid']);
-
-  return {
-    invoiceNumber: String(entry.invoiceNumber ?? '').trim() || '–',
-    caseNumber: String(entry.caseNumber ?? '').trim(),
-    matter: String(entry.matter ?? '').trim(),
-    client: String(entry.client ?? '').trim() || 'Unbekannter Mandant',
-    issueDate: parseDate(entry.issueDate),
-    dueDate: parseDate(entry.dueDate),
-    paidDate: parseDate(entry.paidDate),
-    amount: typeof entry.amount === 'number' ? entry.amount : Number(entry.amount) || 0,
-    status: allowedStatuses.has(normalizedStatus) ? normalizedStatus : 'open',
-    note: String(entry.note ?? '').trim(),
-  };
+function startOfDay(date) {
+  const copy = new Date(date);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
 }
 
-function loadReceivables() {
-  if (!dataElement) {
+function deriveStatus(rawStatus, dueDate, paidDate) {
+  const normalized = String(rawStatus ?? '').toLowerCase();
+  if (normalized === 'bezahlt' || normalized === 'paid' || paidDate) {
+    return 'paid';
+  }
+
+  const overdue = (() => {
+    if (!dueDate) return false;
+    const today = startOfDay(new Date());
+    return startOfDay(dueDate) < today;
+  })();
+
+  if (normalized === 'überfällig' || normalized === 'overdue' || overdue) {
+    return 'overdue';
+  }
+
+  return 'open';
+}
+
+function calculateNetFromEntries(entryIds, timeEntryMap) {
+  if (!Array.isArray(entryIds) || !entryIds.length) {
+    return 0;
+  }
+  return entryIds.reduce((sum, id) => {
+    const entry = timeEntryMap.get(id);
+    if (!entry) return sum;
+    const minutes = Number.isFinite(Number(entry.durationMinutes))
+      ? Number(entry.durationMinutes)
+      : Number(entry.durationMs ?? 0) / 60000;
+    const rate = Number(entry.billableRate ?? entry.rate ?? 0);
+    return sum + (minutes / 60) * rate;
+  }, 0);
+}
+
+function deriveReceivablesFromStore() {
+  const store = window.verilexStore;
+  if (!store) {
+    console.warn('Central store is not available. Receivables list stays empty.');
     return [];
   }
 
-  try {
-    const raw = dataElement.textContent ?? '[]';
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed.map((entry) => normalizeReceivable(entry));
-  } catch (error) {
-    console.error('Die Rechnungsdaten konnten nicht geladen werden.', error);
-    window.dispatchEvent(
-      new CustomEvent('verilex:error', {
-        detail: {
-          title: 'Fehler beim Laden der Rechnungen',
-          message: 'Die Offene-Posten-Daten konnten nicht interpretiert werden.',
-          details: error,
-        },
-      })
-    );
-    return [];
-  }
+  const cases = store.getAll('Case');
+  const clients = store.getAll('Client');
+  const invoices = store.getAll('Invoice');
+  const timeEntries = store.getAll('TimeEntry');
+
+  const caseMap = new Map(cases.map((item) => [item.id, item]));
+  const clientMap = new Map(clients.map((item) => [item.id, item]));
+  const timeEntryMap = new Map(timeEntries.map((item) => [item.id, item]));
+
+  return invoices.map((invoice) => {
+    const caseInfo = caseMap.get(invoice.caseId);
+    const clientInfo = clientMap.get(invoice.clientId);
+    const issueDate = parseDate(invoice.issueDate);
+    const dueDate = parseDate(invoice.dueDate);
+    const paidDate = parseDate(invoice.paidDate);
+
+    const netFromStore = Number.isFinite(Number(invoice.totalNet)) ? Number(invoice.totalNet) : null;
+    const net = netFromStore ?? calculateNetFromEntries(invoice.entryIds, timeEntryMap);
+    const taxRate = Number(invoice.taxRate ?? 0) || 0;
+    const grossAmount = net * (1 + taxRate);
+
+    return {
+      invoiceNumber: String(invoice.invoiceNumber ?? invoice.id ?? '').trim() || '–',
+      caseNumber: caseInfo?.caseNumber ?? invoice.caseId ?? '',
+      matter: caseInfo?.title ?? 'Unbekannte Akte',
+      client: clientInfo?.name ?? 'Unbekannter Mandant',
+      issueDate,
+      dueDate,
+      paidDate,
+      amount: grossAmount,
+      status: deriveStatus(invoice.status, dueDate, paidDate),
+      note: invoice.note ?? '',
+    };
+  });
 }
 
-const receivables = loadReceivables();
+let receivables = [];
 
 const tableBody = document.getElementById('receivables-table-body');
 const emptyState = document.getElementById('receivables-empty-state');
@@ -106,6 +139,33 @@ const filters = {
   status: 'all',
   outstandingOnly: false,
 };
+
+function refreshReceivables() {
+  receivables = deriveReceivablesFromStore();
+  applyFilters();
+}
+
+function registerStoreListeners() {
+  const store = window.verilexStore;
+  if (!store?.on) {
+    return;
+  }
+
+  const events = [
+    'invoiceAdded',
+    'invoiceUpdated',
+    'invoiceRemoved',
+    'timeEntryAdded',
+    'timeEntryUpdated',
+    'timeEntryRemoved',
+    'storeReset',
+    'storeReady',
+  ];
+
+  events.forEach((eventName) => {
+    store.on(eventName, refreshReceivables);
+  });
+}
 
 function formatDate(date) {
   return date ? dateFormatter.format(date) : '–';
@@ -352,8 +412,6 @@ function applyFilters() {
   updateEmptyState(sorted.length);
 }
 
-applyFilters();
-
 if (searchInput) {
   searchInput.addEventListener('input', (event) => {
     filters.query = event.target.value.trim();
@@ -374,3 +432,6 @@ if (outstandingOnlyToggle) {
     applyFilters();
   });
 }
+
+refreshReceivables();
+registerStoreListeners();
