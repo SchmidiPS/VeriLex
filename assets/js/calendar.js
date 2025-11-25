@@ -1,6 +1,6 @@
 import { overlayInstance } from './app.js';
+import { verilexStore } from './store.js';
 
-const dataElement = document.getElementById('calendar-data');
 const calendarGrid = document.getElementById('calendar-grid');
 const currentMonthEl = document.getElementById('calendar-current-month');
 const summaryEl = document.getElementById('calendar-filter-summary');
@@ -15,7 +15,7 @@ const typeSelect = document.getElementById('calendar-type-filter');
 const locationSelect = document.getElementById('calendar-location-filter');
 const focusCriticalCheckbox = document.getElementById('calendar-focus-critical');
 
-if (!dataElement || !calendarGrid || !currentMonthEl) {
+if (!calendarGrid || !currentMonthEl) {
   console.warn('Kalender konnte nicht initialisiert werden.');
 }
 
@@ -53,6 +53,10 @@ let currentYear;
 let currentMonthIndex;
 let selectedEventId = null;
 
+function getStore() {
+  return (typeof window !== 'undefined' && window.verilexStore) || verilexStore || null;
+}
+
 function parseDate(value) {
   if (!value) {
     return null;
@@ -78,7 +82,7 @@ function normalizeEvent(entry) {
     return null;
   }
 
-  const normalizedType = (entry.type ?? 'meeting').toString().trim().toLowerCase();
+  const normalizedType = mapAppointmentType(entry.type ?? 'meeting');
   const locationType = (entry.locationType ?? '').toString().trim().toLowerCase();
 
   return {
@@ -96,6 +100,20 @@ function normalizeEvent(entry) {
     start,
     dateKey: buildDateKey(start),
   };
+}
+
+function mapAppointmentType(value) {
+  const normalized = (value ?? '').toString().trim().toLowerCase();
+  if (['hearing', 'verhandlung', 'gerichtstermin'].includes(normalized)) {
+    return 'hearing';
+  }
+  if (['deadline', 'frist'].includes(normalized)) {
+    return 'deadline';
+  }
+  if (['workshop', 'training', 'schulung'].includes(normalized)) {
+    return 'workshop';
+  }
+  return 'meeting';
 }
 
 function inferLocationType(location) {
@@ -136,7 +154,8 @@ function isCritical(event) {
   return event.type === 'hearing' || event.type === 'deadline';
 }
 
-function parseEvents() {
+function parseEventsFromInline() {
+  const dataElement = document.getElementById('calendar-data');
   if (!dataElement) {
     events = [];
     return;
@@ -169,6 +188,103 @@ function parseEvents() {
       details: error,
     });
     events = [];
+  }
+}
+
+function buildLookup(records, key) {
+  return records.reduce((acc, item) => {
+    acc[item[key]] = item;
+    return acc;
+  }, {});
+}
+
+function mapAppointmentToEvent(appointment, lookups) {
+  const start = parseDate(appointment.dateTime);
+  if (!start) return null;
+
+  const caseInfo = lookups.cases[appointment.caseId];
+  const clientInfo = caseInfo ? lookups.clients[caseInfo.clientId] : undefined;
+
+  const participants = Array.isArray(appointment.participants)
+    ? appointment.participants
+        .map((userId) => lookups.users[userId]?.name || userId)
+        .filter(Boolean)
+    : [];
+
+  return {
+    id: appointment.id,
+    title: appointment.description || 'Besprechung',
+    type: mapAppointmentType(appointment.type),
+    location: appointment.location || 'Ort wird noch festgelegt',
+    locationType: inferLocationType(appointment.location),
+    caseNumber: caseInfo?.caseNumber || '',
+    client: clientInfo?.name || '',
+    participants,
+    notes: '',
+    start,
+    dateKey: buildDateKey(start),
+  };
+}
+
+function mapComplianceItemToEvent(item, lookups) {
+  const start = parseDate(item.deadline);
+  if (!start) return null;
+
+  const caseInfo = lookups.cases[item.caseId];
+  const clientInfo = caseInfo ? lookups.clients[caseInfo.clientId] : undefined;
+  const owner = item.ownerId ? lookups.users[item.ownerId]?.name : null;
+
+  const notes = [owner ? `Verantwortlich: ${owner}` : null, item.notes || null]
+    .filter(Boolean)
+    .join(' • ');
+
+  return {
+    id: `compliance-${item.id}`,
+    title: item.title,
+    type: 'deadline',
+    location: 'Frist / Compliance',
+    locationType: '',
+    caseNumber: caseInfo?.caseNumber || '',
+    client: clientInfo?.name || '',
+    participants: owner ? [owner] : [],
+    notes,
+    start,
+    dateKey: buildDateKey(start),
+  };
+}
+
+function loadEventsFromStore() {
+  const store = getStore();
+  if (!store) {
+    return false;
+  }
+
+  try {
+    const cases = store.getAll('Case');
+    const clients = store.getAll('Client');
+    const users = store.getAll('User');
+    const appointments = store.getAll('Appointment');
+    const complianceItems = store.getAll('ComplianceItem');
+
+    const lookups = {
+      cases: buildLookup(cases, 'id'),
+      clients: buildLookup(clients, 'id'),
+      users: buildLookup(users, 'id'),
+    };
+
+    const appointmentEvents = appointments
+      .map((appointment) => mapAppointmentToEvent(appointment, lookups))
+      .filter(Boolean);
+
+    const complianceEvents = complianceItems
+      .map((item) => mapComplianceItemToEvent(item, lookups))
+      .filter(Boolean);
+
+    events = [...appointmentEvents, ...complianceEvents].sort((a, b) => a.start - b.start);
+    return true;
+  } catch (error) {
+    console.warn('Kalender konnte nicht aus dem zentralen Store geladen werden.', error);
+    return false;
   }
 }
 
@@ -602,6 +718,42 @@ function applyFilters() {
   }
 }
 
+function reloadFromStoreAndRender() {
+  const loaded = loadEventsFromStore();
+  if (!loaded) {
+    return;
+  }
+  initialiseCurrentMonth();
+  updateCurrentMonthLabel();
+  applyFilters();
+}
+
+function registerStoreSubscriptions() {
+  const store = getStore();
+  if (!store?.on) {
+    return;
+  }
+
+  const refreshEvents = () => reloadFromStoreAndRender();
+  const eventNames = [
+    'storeReady',
+    'storeReset',
+    'appointmentAdded',
+    'appointmentUpdated',
+    'appointmentRemoved',
+    'complianceItemAdded',
+    'complianceItemUpdated',
+    'complianceItemRemoved',
+    'caseUpdated',
+    'clientUpdated',
+    'userUpdated',
+  ];
+
+  eventNames.forEach((eventName) => {
+    store.on(eventName, refreshEvents);
+  });
+}
+
 function updateSummary({ query, type, location, focusCritical }) {
   if (!summaryEl) {
     return;
@@ -653,14 +805,19 @@ function registerEvents() {
 }
 
 function initCalendar() {
-  if (!dataElement || !calendarGrid || !currentMonthEl) {
+  if (!calendarGrid || !currentMonthEl) {
     return;
   }
 
-  parseEvents();
+  const loadedFromStore = loadEventsFromStore();
+  if (!loadedFromStore) {
+    parseEventsFromInline();
+  }
+
   initialiseCurrentMonth();
   updateCurrentMonthLabel();
   registerEvents();
+  registerStoreSubscriptions();
   applyFilters();
 }
 
