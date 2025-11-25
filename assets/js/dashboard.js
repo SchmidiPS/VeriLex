@@ -1,31 +1,12 @@
-const SUMMARY_DATA = {
-  cases: 27,
-  hours: 142,
-  invoiceVolume: 21850,
+import { verilexStore } from './store.js';
+
+const WEEKDAY_ORDER = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const INVOICE_COLORS = {
+  bezahlt: '#34d399',
+  versendet: '#60a5fa',
+  entwurf: '#a855f7',
+  überfällig: '#f97316',
 };
-
-const CASE_STATUS_DATA = [
-  { label: 'Neu eingegangen', value: 7 },
-  { label: 'In Bearbeitung', value: 12 },
-  { label: 'Warten auf Rückmeldung', value: 5 },
-  { label: 'Abgeschlossen', value: 9 },
-];
-
-const HOURS_SERIES = [
-  { label: 'Mo', value: 18 },
-  { label: 'Di', value: 22 },
-  { label: 'Mi', value: 26 },
-  { label: 'Do', value: 21 },
-  { label: 'Fr', value: 19 },
-  { label: 'Sa', value: 8 },
-  { label: 'So', value: 4 },
-];
-
-const INVOICE_STATUS_DATA = [
-  { label: 'Bezahlt', value: 18, color: '#34d399' },
-  { label: 'Offen', value: 9, color: '#60a5fa' },
-  { label: 'Überfällig', value: 4, color: '#f97316' },
-];
 
 function updateSummary(metrics) {
   const casesEl = document.getElementById('summary-cases-value');
@@ -41,12 +22,34 @@ function updateSummary(metrics) {
   }
 
   if (invoiceEl) {
-    invoiceEl.textContent = `${metrics.invoiceVolume.toLocaleString('de-DE')} €`;
+    const formatted = metrics.invoiceVolume.toLocaleString('de-DE', {
+      minimumFractionDigits: metrics.invoiceVolume % 1 === 0 ? 0 : 2,
+    });
+    invoiceEl.textContent = `${formatted} €`;
   }
+}
+
+function deriveSummaryFromStore() {
+  const cases = verilexStore.getAll('Case');
+  const timeEntries = verilexStore.getAll('TimeEntry');
+  const invoices = verilexStore.getAll('Invoice');
+
+  const totalMinutes = timeEntries.reduce((sum, entry) => sum + Math.max(Number(entry.durationMinutes) || 0, 0), 0);
+  const totalHours = Math.round((totalMinutes / 60) * 10) / 10;
+  const invoiceVolume = invoices.reduce((sum, invoice) => sum + Math.max(Number(invoice.totalNet) || 0, 0), 0);
+
+  return {
+    cases: cases.length,
+    hours: Number.isFinite(totalHours) ? totalHours : 0,
+    invoiceVolume: Number.isFinite(invoiceVolume) ? invoiceVolume : 0,
+  };
 }
 
 function renderBarChart(container, data) {
   if (!container || !Array.isArray(data) || data.length === 0) {
+    if (container) {
+      container.innerHTML = '';
+    }
     return;
   }
 
@@ -74,6 +77,12 @@ function renderBarChart(container, data) {
 
 function renderTrendChart(svgEl, axisEl, data) {
   if (!svgEl || !Array.isArray(data) || data.length === 0) {
+    if (svgEl) {
+      svgEl.innerHTML = '';
+    }
+    if (axisEl) {
+      axisEl.innerHTML = '';
+    }
     return;
   }
 
@@ -124,6 +133,18 @@ function renderTrendChart(svgEl, axisEl, data) {
 
 function renderDonutChart(container, legendEl, data, { valueEl, captionEl } = {}) {
   if (!container || !Array.isArray(data) || data.length === 0) {
+    if (container) {
+      container.style.background = 'conic-gradient(#e5e7eb 0deg, #e5e7eb 360deg)';
+    }
+    if (valueEl) {
+      valueEl.textContent = '0%';
+    }
+    if (captionEl) {
+      captionEl.textContent = 'Keine Daten';
+    }
+    if (legendEl) {
+      legendEl.innerHTML = '';
+    }
     return;
   }
 
@@ -183,23 +204,80 @@ function renderDonutChart(container, legendEl, data, { valueEl, captionEl } = {}
   }
 }
 
-function initDashboard() {
-  updateSummary(SUMMARY_DATA);
-  renderBarChart(document.getElementById('case-status-chart'), CASE_STATUS_DATA);
+function deriveCaseStatusData(cases) {
+  const order = Array.isArray(window?.verilexDataModel?.enums?.caseStatus)
+    ? window.verilexDataModel.enums.caseStatus
+    : [];
+
+  const counts = new Map();
+  cases.forEach((item) => {
+    const status = (item.status ?? 'Unbekannt').toString();
+    counts.set(status, (counts.get(status) ?? 0) + 1);
+  });
+
+  const ordered = order.length > 0 ? order : Array.from(counts.keys()).sort((a, b) => a.localeCompare(b, 'de'));
+  return ordered.map((status) => ({ label: status, value: counts.get(status) ?? 0 })).filter((entry) => entry.value > 0);
+}
+
+function deriveHoursSeries(timeEntries) {
+  const buckets = new Map(WEEKDAY_ORDER.map((label) => [label, 0]));
+
+  timeEntries.forEach((entry) => {
+    const startedAt = new Date(entry.startedAt ?? entry.start);
+    if (Number.isNaN(startedAt.getTime())) {
+      return;
+    }
+    const weekdayIndex = startedAt.getDay();
+    const label = WEEKDAY_ORDER[weekdayIndex === 0 ? 6 : weekdayIndex - 1];
+    const current = buckets.get(label) ?? 0;
+    const additionalHours = Math.max(Number(entry.durationMinutes) || 0, 0) / 60;
+    buckets.set(label, current + additionalHours);
+  });
+
+  return WEEKDAY_ORDER.map((label) => ({ label, value: Math.round((buckets.get(label) ?? 0) * 10) / 10 }));
+}
+
+function deriveInvoiceStatusData(invoices) {
+  const counts = new Map();
+  invoices.forEach((invoice) => {
+    const status = (invoice.status ?? 'unbekannt').toString();
+    counts.set(status, (counts.get(status) ?? 0) + 1);
+  });
+
+  const entries = Array.from(counts.entries()).map(([status, value]) => {
+    const normalized = status.toLowerCase();
+    return {
+      label: status.charAt(0).toUpperCase() + status.slice(1),
+      value,
+      color: INVOICE_COLORS[normalized] ?? '#60a5fa',
+    };
+  });
+
+  return entries.sort((a, b) => b.value - a.value);
+}
+
+function renderDashboardFromStore() {
+  updateSummary(deriveSummaryFromStore());
+  renderBarChart(document.getElementById('case-status-chart'), deriveCaseStatusData(verilexStore.getAll('Case')));
   renderTrendChart(
     document.getElementById('hours-trend-chart'),
     document.getElementById('hours-trend-axis'),
-    HOURS_SERIES,
+    deriveHoursSeries(verilexStore.getAll('TimeEntry')),
   );
   renderDonutChart(
     document.getElementById('invoice-status-chart'),
     document.getElementById('invoice-status-legend'),
-    INVOICE_STATUS_DATA,
+    deriveInvoiceStatusData(verilexStore.getAll('Invoice')),
     {
       valueEl: document.getElementById('invoice-donut-value'),
       captionEl: document.getElementById('invoice-donut-caption'),
     },
   );
+}
+
+function initDashboard() {
+  renderDashboardFromStore();
+  verilexStore.on('storeChanged', renderDashboardFromStore);
 }
 
 initDashboard();
