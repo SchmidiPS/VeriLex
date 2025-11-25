@@ -1,4 +1,5 @@
 import { overlayInstance } from './app.js';
+import { verilexStore } from './store.js';
 
 const PROBABILITY_SCALE = {
   niedrig: 1,
@@ -15,120 +16,7 @@ const IMPACT_SCALE = {
 const PROBABILITY_ORDER = ['niedrig', 'mittel', 'hoch'];
 const IMPACT_ORDER = ['hoch', 'mittel', 'niedrig'];
 
-const CASE_DATA = [
-  {
-    id: 'AKT-2025-014',
-    title: 'Kartellverfahren Alpine vs. Bundeswettbewerbsbehörde',
-    client: 'Alpine Hochbau AG',
-    stage: 'Beweisaufnahme',
-    probability: 'hoch',
-    impact: 'hoch',
-    owner: 'Dr. Anna Leitner',
-    nextDeadline: '2025-11-14',
-    nextAction: 'Gegenäußerung zu Sachverständigengutachten finalisieren',
-    notes: 'Vergleichsangebot prüfen, bevor Stellungnahme eingereicht wird.',
-    category: 'Kartell- & Wettbewerbsrecht',
-    lastUpdated: '2025-11-09T07:45:00+01:00',
-  },
-  {
-    id: 'AKT-2025-011',
-    title: 'Arbeitsrechtliche Sammelklage Vertrieb',
-    client: 'Nordalpine Maschinenbau GmbH',
-    stage: 'Vergleichsverhandlung',
-    probability: 'mittel',
-    impact: 'hoch',
-    owner: 'Mag. Felix Gruber',
-    nextDeadline: '2025-11-19',
-    nextAction: 'Vergleichsparameter mit Personalabteilung abstimmen',
-    notes: 'Stimmung im Gremium kritisch, Vorbereitung auf Güteverhandlung läuft.',
-    category: 'Arbeitsrecht',
-    lastUpdated: '2025-11-08T16:20:00+01:00',
-  },
-  {
-    id: 'AKT-2025-009',
-    title: 'Produkthaftung SmartHome-System',
-    client: 'Lumos Living GmbH',
-    stage: 'Sachverständigenverfahren',
-    probability: 'hoch',
-    impact: 'mittel',
-    owner: 'Dr. Anna Leitner',
-    nextDeadline: '2025-11-22',
-    nextAction: 'Technische Stellungnahme nachbesprechen',
-    notes: 'Einholung eines Zweitgutachtens empfohlen.',
-    category: 'Produkthaftung',
-    lastUpdated: '2025-11-07T10:05:00+01:00',
-  },
-  {
-    id: 'AKT-2024-118',
-    title: 'Vergaberecht: Landesklinikum Süd',
-    client: 'MedCare Infrastruktur GmbH',
-    stage: 'Anfechtung',
-    probability: 'mittel',
-    impact: 'mittel',
-    owner: 'Dr.in Lara Stein',
-    nextDeadline: '2025-11-18',
-    nextAction: 'Sofortmaßnahmen mit Einkaufsteam abstimmen',
-    notes: 'Zusätzliche Unterlagen vom Mandanten angefordert.',
-    category: 'Vergaberecht',
-    lastUpdated: '2025-11-08T09:40:00+01:00',
-  },
-  {
-    id: 'AKT-2025-004',
-    title: 'Urheberrechtsstreit Streamingplattform',
-    client: 'Streamly Media KG',
-    stage: 'Hauptverhandlung',
-    probability: 'mittel',
-    impact: 'hoch',
-    owner: 'Mag. Felix Gruber',
-    nextDeadline: '2025-11-12',
-    nextAction: 'Beweislastanalyse finalisieren',
-    notes: 'Gegenpartei hat Antrag auf einstweilige Verfügung gestellt.',
-    category: 'IP & Medienrecht',
-    lastUpdated: '2025-11-09T12:10:00+01:00',
-  },
-  {
-    id: 'AKT-2025-017',
-    title: 'Datenschutzprüfung Konzern HR-System',
-    client: 'WestBank AG',
-    stage: 'Audit',
-    probability: 'niedrig',
-    impact: 'hoch',
-    owner: 'Dr.in Lara Stein',
-    nextDeadline: '2025-11-28',
-    nextAction: 'Technische und organisatorische Maßnahmen dokumentieren',
-    notes: 'Offen: Nachweis des Data-Mapping-Prozesses.',
-    category: 'Datenschutz & Compliance',
-    lastUpdated: '2025-11-05T14:00:00+01:00',
-  },
-  {
-    id: 'AKT-2025-020',
-    title: 'Gesellschafterstreit Software-Start-up',
-    client: 'BrightLayer Technologies OG',
-    stage: 'Einstweiliger Rechtsschutz',
-    probability: 'hoch',
-    impact: 'hoch',
-    owner: 'Dr. Anna Leitner',
-    nextDeadline: '2025-11-15',
-    nextAction: 'Sicherungsantrag begründen und Finanzkennzahlen ergänzen',
-    notes: 'Verhandlungstermin bereits fixiert, Liquidität angespannt.',
-    category: 'Gesellschaftsrecht',
-    lastUpdated: '2025-11-09T18:30:00+01:00',
-  },
-  {
-    id: 'AKT-2025-021',
-    title: 'Gewährleistungsprozess Bauprojekt Donauufer',
-    client: 'CityBuild Projekt GmbH',
-    stage: 'Mediation',
-    probability: 'niedrig',
-    impact: 'mittel',
-    owner: 'Mag. Felix Gruber',
-    nextDeadline: '2025-11-25',
-    nextAction: 'Mediationsstrategie mit Mandant abstimmen',
-    notes: 'Gegenpartei signalisiert Vergleichsbereitschaft.',
-    category: 'Bau- & Immobilienrecht',
-    lastUpdated: '2025-11-06T11:05:00+01:00',
-  },
-];
+let enhancedCases = [];
 
 const elements = {
   lastUpdateLabel: document.getElementById('risk-last-update-label'),
@@ -148,18 +36,209 @@ const elements = {
   briefingContent: document.getElementById('risk-briefing-content'),
 };
 
-const enhancedCases = CASE_DATA.map((entry) => {
-  const probabilityValue = PROBABILITY_SCALE[entry.probability] ?? 1;
-  const impactValue = IMPACT_SCALE[entry.impact] ?? 1;
+function toLookupMap(list, key = 'id') {
+  return new Map(list.map((item) => [item[key], item]));
+}
+
+function groupByCaseId(list) {
+  return list.reduce((acc, item) => {
+    const caseId = item.caseId;
+    if (!caseId) {
+      return acc;
+    }
+    const bucket = acc.get(caseId) ?? [];
+    bucket.push(item);
+    acc.set(caseId, bucket);
+    return acc;
+  }, new Map());
+}
+
+function determineImpact(priority) {
+  if (priority === 'hoch') return 'hoch';
+  if (priority === 'mittel') return 'mittel';
+  return 'niedrig';
+}
+
+function determineProbability(nextDeadline, priority) {
+  const impactFallback = determineImpact(priority);
+
+  if (!nextDeadline) {
+    return impactFallback;
+  }
+
+  const deadlineDate = parseDate(nextDeadline.date);
+  if (!deadlineDate) {
+    return nextDeadline.risk ?? impactFallback;
+  }
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const compareDate = new Date(deadlineDate);
+  compareDate.setHours(0, 0, 0, 0);
+  const diffDays = (compareDate - now) / (24 * 60 * 60 * 1000);
+
+  if (nextDeadline.risk === 'hoch' || diffDays <= 7) {
+    return 'hoch';
+  }
+  if (nextDeadline.risk === 'mittel' || diffDays <= 14) {
+    return 'mittel';
+  }
+  return impactFallback;
+}
+
+function selectNextDeadline(deadlines) {
+  if (!Array.isArray(deadlines) || deadlines.length === 0) {
+    return null;
+  }
+
+  const sorted = [...deadlines].sort((a, b) => {
+    const timeA = parseDate(a.date)?.getTime() ?? Infinity;
+    const timeB = parseDate(b.date)?.getTime() ?? Infinity;
+    return timeA - timeB;
+  });
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const upcoming = sorted.find((deadline) => {
+    const parsed = parseDate(deadline.date);
+    if (!parsed) return false;
+    parsed.setHours(0, 0, 0, 0);
+    return parsed.getTime() >= now.getTime();
+  });
+
+  return upcoming ?? sorted[0];
+}
+
+function getResponsible(caseItem, userLookup) {
+  const firstUserId = Array.isArray(caseItem.assignedUsers) ? caseItem.assignedUsers[0] : null;
+  if (!firstUserId) {
+    return 'Noch nicht zugewiesen';
+  }
+  return userLookup.get(firstUserId)?.name ?? 'Unbekanntes Teammitglied';
+}
+
+function getDeadlineCandidates(caseItem, complianceItems, appointments) {
+  const caseDeadlines = Array.isArray(caseItem.deadlines)
+    ? caseItem.deadlines.map((deadline) => ({
+        date: deadline.date,
+        title: deadline.title,
+        risk: deadline.risk,
+      }))
+    : [];
+
+  const complianceDeadlines = complianceItems.map((item) => ({
+    date: item.deadline,
+    title: `Compliance: ${item.title}`,
+    risk: item.risk,
+    notes: item.notes,
+  }));
+
+  const appointmentDeadlines = appointments.map((appointment) => ({
+    date: appointment.dateTime,
+    title: `Termin: ${appointment.description}`,
+    risk: 'mittel',
+  }));
+
+  return [...caseDeadlines, ...complianceDeadlines, ...appointmentDeadlines];
+}
+
+function computeLastUpdated(caseItem, complianceItems, appointments, timeEntries, documents) {
+  const candidates = [
+    caseItem.openedAt,
+    ...caseItem.deadlines?.map((deadline) => deadline.date) ?? [],
+    ...complianceItems.map((item) => item.deadline),
+    ...appointments.map((item) => item.dateTime),
+    ...timeEntries.map((item) => item.startedAt ?? item.endedAt),
+    ...documents.map((doc) => doc.createdAt),
+  ]
+    .map((value) => parseDate(value))
+    .filter(Boolean)
+    .map((date) => date.getTime());
+
+  if (!candidates.length) {
+    return caseItem.openedAt ?? null;
+  }
+
+  return new Date(Math.max(...candidates)).toISOString();
+}
+
+function buildEnhancedCase(caseItem, lookups) {
+  const clientName = lookups.clients.get(caseItem.clientId)?.name ?? 'Unbekannter Mandant';
+  const complianceItems = lookups.complianceByCase.get(caseItem.id) ?? [];
+  const appointments = lookups.appointmentsByCase.get(caseItem.id) ?? [];
+  const timeEntries = lookups.timeEntriesByCase.get(caseItem.id) ?? [];
+  const documents = lookups.documentsByCase.get(caseItem.id) ?? [];
+
+  const deadlineCandidates = getDeadlineCandidates(caseItem, complianceItems, appointments);
+  const nextDeadline = selectNextDeadline(deadlineCandidates);
+  const probability = determineProbability(nextDeadline, caseItem.priority);
+  const impact = determineImpact(caseItem.priority);
+  const probabilityValue = PROBABILITY_SCALE[probability] ?? 1;
+  const impactValue = IMPACT_SCALE[impact] ?? 1;
   const score = probabilityValue * impactValue;
+  const lastUpdated = computeLastUpdated(
+    caseItem,
+    complianceItems,
+    appointments,
+    timeEntries,
+    documents
+  );
+
+  const notes =
+    nextDeadline?.notes ??
+    complianceItems[0]?.notes ??
+    `Fokus: ${caseItem.category ?? 'Allgemeines Kanzleirisiko'}`;
+
   return {
-    ...entry,
+    id: caseItem.caseNumber ?? caseItem.id,
+    title: caseItem.title ?? 'Unbenanntes Mandat',
+    client: clientName,
+    stage: caseItem.status ?? 'Bearbeitung',
+    probability,
+    impact,
     probabilityValue,
     impactValue,
     score,
+    owner: getResponsible(caseItem, lookups.users),
+    nextDeadline: nextDeadline?.date ?? null,
+    nextAction: nextDeadline?.title ?? 'Nächste Maßnahme planen',
+    notes,
+    category: caseItem.category ?? '',
+    lastUpdated,
     bucket: getBucket(score),
   };
-});
+}
+
+function rebuildEnhancedCases() {
+  try {
+    const clients = toLookupMap(verilexStore.getAll('Client'));
+    const users = toLookupMap(verilexStore.getAll('User'));
+    const complianceByCase = groupByCaseId(verilexStore.getAll('ComplianceItem'));
+    const appointmentsByCase = groupByCaseId(verilexStore.getAll('Appointment'));
+    const timeEntriesByCase = groupByCaseId(verilexStore.getAll('TimeEntry'));
+    const documentsByCase = groupByCaseId(verilexStore.getAll('Document'));
+
+    const cases = verilexStore.getAll('Case');
+    enhancedCases = cases.map((caseItem) =>
+      buildEnhancedCase(caseItem, {
+        clients,
+        users,
+        complianceByCase,
+        appointmentsByCase,
+        timeEntriesByCase,
+        documentsByCase,
+      })
+    );
+  } catch (error) {
+    console.error('Konnte Risiko-Daten nicht aus dem Store lesen.', error);
+    overlayInstance?.show?.({
+      title: 'Keine Risikodaten verfügbar',
+      message: 'Der zentrale Datenstore konnte nicht geladen werden. Bitte aktualisieren Sie die Seite.',
+      details: error,
+    });
+    enhancedCases = [];
+  }
+}
 
 function getBucket(score) {
   if (score >= 9) {
@@ -273,22 +352,50 @@ function populateFilters() {
     return;
   }
 
+  const previousOwner = elements.ownerFilter.value;
+  const previousStage = elements.stageFilter.value;
+
+  elements.ownerFilter.innerHTML = '';
+  elements.stageFilter.innerHTML = '';
+
+  const ownerPlaceholder = document.createElement('option');
+  ownerPlaceholder.value = '';
+  ownerPlaceholder.textContent = 'Alle Teams';
+  elements.ownerFilter.append(ownerPlaceholder);
+
+  const stagePlaceholder = document.createElement('option');
+  stagePlaceholder.value = '';
+  stagePlaceholder.textContent = 'Alle Stände';
+  elements.stageFilter.append(stagePlaceholder);
+
   const owners = Array.from(new Set(enhancedCases.map((entry) => entry.owner))).sort((a, b) => a.localeCompare(b, 'de-AT'));
   const stages = Array.from(new Set(enhancedCases.map((entry) => entry.stage))).sort((a, b) => a.localeCompare(b, 'de-AT'));
 
-  owners.forEach((owner) => {
-    const option = document.createElement('option');
-    option.value = owner;
-    option.textContent = owner;
-    elements.ownerFilter.append(option);
-  });
+  owners
+    .filter(Boolean)
+    .forEach((owner) => {
+      const option = document.createElement('option');
+      option.value = owner;
+      option.textContent = owner;
+      elements.ownerFilter.append(option);
+    });
 
-  stages.forEach((stage) => {
-    const option = document.createElement('option');
-    option.value = stage;
-    option.textContent = stage;
-    elements.stageFilter.append(option);
-  });
+  stages
+    .filter(Boolean)
+    .forEach((stage) => {
+      const option = document.createElement('option');
+      option.value = stage;
+      option.textContent = stage;
+      elements.stageFilter.append(option);
+    });
+
+  if (previousOwner && owners.includes(previousOwner)) {
+    elements.ownerFilter.value = previousOwner;
+  }
+
+  if (previousStage && stages.includes(previousStage)) {
+    elements.stageFilter.value = previousStage;
+  }
 }
 
 function renderSummary(cases) {
@@ -673,12 +780,19 @@ function render() {
   renderBriefing(filtered);
 }
 
+function refreshUiFromStore() {
+  rebuildEnhancedCases();
+  populateFilters();
+  updateLastUpdatedLabel();
+  render();
+}
+
 function init() {
   try {
-    populateFilters();
-    updateLastUpdatedLabel();
+    refreshUiFromStore();
     registerEvents();
-    render();
+    verilexStore.on('storeReady', refreshUiFromStore);
+    verilexStore.on('storeChanged', refreshUiFromStore);
   } catch (error) {
     console.error('Risikomonitor konnte nicht initialisiert werden.', error);
     overlayInstance?.show?.({
