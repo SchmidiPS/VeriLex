@@ -1,6 +1,6 @@
 import { overlayInstance } from './app.js';
+import { verilexStore } from './store.js';
 
-const capacityDataElement = document.getElementById('team-capacity-data');
 const overviewDescriptionEl = document.getElementById('capacity-overview-description');
 const indicatorEl = document.querySelector('.capacity-indicator');
 const indicatorValueEl = document.getElementById('capacity-indicator-value');
@@ -34,6 +34,35 @@ let planningPeriod = '';
 let summaryTotals = null;
 let bottleneckItems = [];
 let upcomingItems = [];
+
+function getCurrentWeekRange() {
+  const now = new Date();
+  const start = new Date(now);
+  const day = start.getDay();
+  const diffToMonday = (day + 6) % 7;
+  start.setDate(start.getDate() - diffToMonday);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+}
+
+function formatRangeLabel(range) {
+  const formatter = new Intl.DateTimeFormat('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const weekLabel = `KW ${getIsoWeekNumber(range.start)}`;
+  return `${weekLabel} · ${formatter.format(range.start)} – ${formatter.format(range.end)}`;
+}
+
+function getIsoWeekNumber(date) {
+  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = target.getUTCDay() || 7;
+  target.setUTCDate(target.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+  return Math.ceil(((target - yearStart) / 86400000 + 1) / 7);
+}
 
 function formatNumber(value, { maximumFractionDigits = 0 } = {}) {
   return new Intl.NumberFormat('de-DE', { maximumFractionDigits }).format(value);
@@ -131,41 +160,196 @@ function normalizeMember(entry) {
   };
 }
 
-function parseCapacityData() {
-  if (!capacityDataElement) {
-    return null;
+function durationMinutes(entry) {
+  if (typeof entry.durationMinutes === 'number') {
+    return entry.durationMinutes;
+  }
+  const start = new Date(entry.startedAt);
+  const end = new Date(entry.endedAt);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
+  return Math.max(0, Math.round((end - start) / 60000));
+}
+
+function parseAvailabilityToHours(availability) {
+  if (typeof availability !== 'string') return 40;
+  const match = availability.match(/(\d{1,3})\s*%/);
+  const percent = match ? Number(match[1]) : 100;
+  return Math.max(0, Math.round((percent / 100) * 40));
+}
+
+function determineFocus(entries, caseMap) {
+  if (!entries.length) return { focus: 'Ressourcen verfügbar', caseLabel: '' };
+  const latest = entries.slice().sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))[0];
+  const relatedCase = caseMap.get(latest.caseId);
+  return {
+    focus: latest.activity || 'Aktuelle Mandatsarbeit',
+    caseLabel: relatedCase ? `${relatedCase.caseNumber ?? ''}`.trim() || relatedCase.title : '',
+  };
+}
+
+function nextMilestoneForUser(userId, caseMap, appointments) {
+  const userAppointments = appointments
+    .filter((appt) => Array.isArray(appt.participants) && appt.participants.includes(userId))
+    .filter((appt) => new Date(appt.dateTime) >= new Date())
+    .sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+
+  if (userAppointments[0]) {
+    const label = formatDate(userAppointments[0].dateTime);
+    const caseInfo = caseMap.get(userAppointments[0].caseId);
+    const caseLabel = caseInfo ? ` · ${caseInfo.caseNumber || caseInfo.title}` : '';
+    return `${label}${caseLabel}`;
   }
 
+  const deadlines = Array.from(caseMap.values())
+    .filter((c) => Array.isArray(c.assignedUsers) && c.assignedUsers.includes(userId))
+    .flatMap((c) => (Array.isArray(c.deadlines) ? c.deadlines.map((dl) => ({ ...dl, caseId: c.id })) : []))
+    .filter((dl) => new Date(dl.date) >= new Date())
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  if (deadlines[0]) {
+    const caseInfo = caseMap.get(deadlines[0].caseId);
+    const caseLabel = caseInfo ? `${caseInfo.caseNumber || caseInfo.title}` : '';
+    return `${formatDate(deadlines[0].date)} · ${deadlines[0].title}${caseLabel ? ` (${caseLabel})` : ''}`;
+  }
+
+  return '';
+}
+
+function deriveBottlenecks(cases, users) {
+  const now = new Date();
+  const soon = new Date();
+  soon.setDate(now.getDate() + 10);
+  const userMap = new Map(users.map((u) => [u.id, u.name]));
+
+  const deadlines = cases
+    .flatMap((c) => (Array.isArray(c.deadlines) ? c.deadlines.map((d) => ({ ...d, caseId: c.id })) : []))
+    .filter((d) => {
+      const date = new Date(d.date);
+      return !Number.isNaN(date.getTime()) && date <= soon;
+    })
+    .map((deadline) => {
+      const relatedCase = cases.find((c) => c.id === deadline.caseId);
+      const ownerId = Array.isArray(relatedCase?.assignedUsers) ? relatedCase.assignedUsers[0] : null;
+      return {
+        title: relatedCase?.title || deadline.title,
+        severity: deadline.risk || 'mittel',
+        owner: ownerId ? userMap.get(ownerId) || 'Team' : 'Team',
+        action: `Frist ${formatDate(deadline.date)} vorbereiten (${deadline.title}).`,
+      };
+    });
+
+  if (deadlines.length) return deadlines;
+
+  return cases
+    .filter((c) => c.priority === 'hoch')
+    .map((c) => ({
+      title: c.title,
+      severity: 'hoch',
+      owner: (Array.isArray(c.assignedUsers) && userMap.get(c.assignedUsers[0])) || 'Team',
+      action: 'Hohe Priorität – Kapazitäten gezielt zuteilen.',
+    }));
+}
+
+function deriveUpcoming(appointments, cases, users) {
+  const now = new Date();
+  const horizon = new Date();
+  horizon.setDate(now.getDate() + 21);
+  const caseMap = new Map(cases.map((c) => [c.id, c]));
+  const userMap = new Map(users.map((u) => [u.id, u.name]));
+
+  const upcoming = appointments
+    .filter((appt) => {
+      const date = new Date(appt.dateTime);
+      return !Number.isNaN(date.getTime()) && date >= now && date <= horizon;
+    })
+    .sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime))
+    .map((appt) => {
+      const relatedCase = caseMap.get(appt.caseId);
+      const caseLabel = relatedCase ? `${relatedCase.caseNumber || relatedCase.title}` : '';
+      const owners = Array.isArray(appt.participants)
+        ? appt.participants
+            .map((id) => userMap.get(id))
+            .filter(Boolean)
+            .join(', ')
+        : '';
+
+      return {
+        date: appt.dateTime,
+        label: `${appt.description}${caseLabel ? ` (${caseLabel})` : ''}`,
+        owner: owners || 'Team',
+      };
+    });
+
+  if (upcoming.length) return upcoming;
+
+  return cases
+    .flatMap((c) => (Array.isArray(c.deadlines) ? c.deadlines.map((dl) => ({ ...dl, caseId: c.id })) : []))
+    .map((dl) => ({
+      date: dl.date,
+      label: dl.title,
+      owner: 'Team',
+    }));
+}
+
+function deriveCapacityFromStore() {
   try {
-    const rawText = capacityDataElement.textContent ?? '{}';
-    const parsed = JSON.parse(rawText);
+    const store = (typeof window !== 'undefined' && window.verilexStore) || verilexStore;
+    if (!store) {
+      throw new Error('Zentraler Store ist nicht verfügbar.');
+    }
 
-    const members = Array.isArray(parsed.members) ? parsed.members.map(normalizeMember) : [];
+    const range = getCurrentWeekRange();
+    planningPeriod = formatRangeLabel(range);
+
+    const users = store.getAll('User');
+    const cases = store.getAll('Case');
+    const timeEntries = store.getAll('TimeEntry');
+    const appointments = store.getAll('Appointment');
+    const caseMap = new Map(cases.map((c) => [c.id, c]));
+
+    const members = users.map((user) => {
+      const entries = timeEntries
+        .filter((entry) => entry.userId === user.id)
+        .filter((entry) => {
+          const start = new Date(entry.startedAt);
+          return start >= range.start && start <= range.end;
+        });
+
+      const booked = entries.reduce((total, entry) => total + durationMinutes(entry) / 60, 0);
+      const billable = entries
+        .filter((entry) => typeof entry.billableRate === 'number' && entry.billableRate > 0)
+        .reduce((total, entry) => total + durationMinutes(entry) / 60, 0);
+      const capacity = parseAvailabilityToHours(user.availability);
+      const nonBillable = Math.max(0, booked - billable);
+      const utilization = capacity > 0 ? Math.min(1, booked / capacity) : 0;
+      const focusInfo = determineFocus(entries, caseMap);
+
+      return normalizeMember({
+        id: user.id,
+        name: user.name,
+        roleLabel: user.role,
+        roleId: user.role?.toLowerCase() || 'team',
+        capacity,
+        booked,
+        billable,
+        nonBillable,
+        status: determineStatus(utilization),
+        focus: focusInfo.focus,
+        case: focusInfo.caseLabel,
+        nextMilestone: nextMilestoneForUser(user.id, caseMap, appointments),
+      });
+    });
+
     rawMembers = members.filter(Boolean);
-    planningPeriod = typeof parsed.planningPeriod === 'string' ? parsed.planningPeriod.trim() : '';
-
-    const summary = parsed.summary ?? {};
     summaryTotals = {
-      totalCapacity:
-        typeof summary.totalCapacity === 'number' && !Number.isNaN(summary.totalCapacity)
-          ? summary.totalCapacity
-          : rawMembers.reduce((total, member) => total + member.capacity, 0),
-      booked:
-        typeof summary.booked === 'number' && !Number.isNaN(summary.booked)
-          ? summary.booked
-          : rawMembers.reduce((total, member) => total + member.booked, 0),
-      billable:
-        typeof summary.billable === 'number' && !Number.isNaN(summary.billable)
-          ? summary.billable
-          : rawMembers.reduce((total, member) => total + member.billable, 0),
-      nonBillable:
-        typeof summary.nonBillable === 'number' && !Number.isNaN(summary.nonBillable)
-          ? summary.nonBillable
-          : rawMembers.reduce((total, member) => total + member.nonBillable, 0),
+      totalCapacity: rawMembers.reduce((total, member) => total + member.capacity, 0),
+      booked: rawMembers.reduce((total, member) => total + member.booked, 0),
+      billable: rawMembers.reduce((total, member) => total + member.billable, 0),
+      nonBillable: rawMembers.reduce((total, member) => total + member.nonBillable, 0),
     };
 
-    bottleneckItems = Array.isArray(parsed.bottlenecks) ? parsed.bottlenecks : [];
-    upcomingItems = Array.isArray(parsed.upcoming) ? parsed.upcoming : [];
+    bottleneckItems = deriveBottlenecks(cases, users);
+    upcomingItems = deriveUpcoming(appointments, cases, users);
   } catch (error) {
     console.error('Die Kapazitätsdaten konnten nicht gelesen werden.', error);
     overlayInstance?.show?.({
@@ -228,7 +412,9 @@ function populateRoleFilter() {
     return;
   }
 
-  const seen = new Set();
+  const seen = new Set(['']);
+  roleSelect.innerHTML = '<option value="">Alle Rollen</option>';
+
   rawMembers.forEach((member) => {
     if (!member.roleId || seen.has(member.roleId)) {
       return;
@@ -429,14 +615,22 @@ function initFilters() {
   loadSelect?.addEventListener('change', filterMembers);
 }
 
-function initialize() {
-  parseCapacityData();
+function renderFromStore() {
+  deriveCapacityFromStore();
   updateOverview();
   populateRoleFilter();
   renderBottlenecks();
   renderUpcoming();
-  initFilters();
   filterMembers();
+}
+
+function initialize() {
+  initFilters();
+  renderFromStore();
+
+  verilexStore.on('storeReady', renderFromStore);
+  verilexStore.on('storeReset', renderFromStore);
+  verilexStore.on('storeChanged', renderFromStore);
 }
 
 initialize();
