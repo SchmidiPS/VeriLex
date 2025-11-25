@@ -214,6 +214,42 @@
         organizationType: "Rechtsabteilung",
         address: "Brienner Straße 20, 80333 München",
         preferredBilling: "Pauschale"
+      },
+      {
+        id: "cl-greentech",
+        name: "GreenTech Holding",
+        contactEmail: "office@greentech.example",
+        phone: "+49 221 454545",
+        organizationType: "Konzern",
+        address: "Rheinufer 7, 50678 Köln",
+        preferredBilling: "nach Stunden"
+      },
+      {
+        id: "cl-petersen",
+        name: "Erbengemeinschaft Petersen",
+        contactEmail: "kontakt@petersen.example",
+        phone: "+49 40 818181",
+        organizationType: "Privat",
+        address: "Am Fleet 5, 20457 Hamburg",
+        preferredBilling: "Pauschale"
+      },
+      {
+        id: "cl-futurelabs",
+        name: "FutureLabs GmbH",
+        contactEmail: "legal@futurelabs.example",
+        phone: "+49 351 343434",
+        organizationType: "Technologie",
+        address: "Innovation Campus 1, 01069 Dresden",
+        preferredBilling: "nach Stunden"
+      },
+      {
+        id: "cl-schmidt",
+        name: "Eva Schmidt",
+        contactEmail: "eva.schmidt@example.com",
+        phone: "+49 511 252525",
+        organizationType: "Privat",
+        address: "Lavesstraße 12, 30159 Hannover",
+        preferredBilling: "nach Stunden"
       }
     ],
     users: [
@@ -271,6 +307,51 @@
         closedAt: null,
         assignedUsers: ["u-associate"],
         deadlines: []
+      },
+      {
+        id: "ca-2047",
+        caseNumber: "VX-2047",
+        title: "Nachlassverwaltung Petersen",
+        clientId: "cl-petersen",
+        status: "in Bearbeitung",
+        priority: "mittel",
+        category: "Erbrecht",
+        openedAt: "2025-08-21",
+        closedAt: null,
+        assignedUsers: ["u-partner"],
+        deadlines: [
+          { id: "dl-3", title: "Auseinandersetzungsplan finalisieren", date: "2025-11-22", risk: "mittel" }
+        ]
+      },
+      {
+        id: "ca-2048",
+        caseNumber: "VX-2048",
+        title: "Datenschutz-Audit FutureLabs",
+        clientId: "cl-futurelabs",
+        status: "in Bearbeitung",
+        priority: "hoch",
+        category: "Datenschutz",
+        openedAt: "2025-09-02",
+        closedAt: null,
+        assignedUsers: ["u-associate"],
+        deadlines: [
+          { id: "dl-4", title: "Auditbericht abgeben", date: "2025-11-18", risk: "hoch" }
+        ]
+      },
+      {
+        id: "ca-2049",
+        caseNumber: "VX-2049",
+        title: "Arbeitsrechtliche Beratung Schmidt",
+        clientId: "cl-schmidt",
+        status: "wartet",
+        priority: "mittel",
+        category: "Arbeitsrecht",
+        openedAt: "2025-10-10",
+        closedAt: null,
+        assignedUsers: ["u-associate"],
+        deadlines: [
+          { id: "dl-5", title: "Güteverhandlung vorbereiten", date: "2025-11-27", risk: "mittel" }
+        ]
       }
     ],
     documents: [
@@ -319,6 +400,42 @@
         notes: "Lieferantenschutzklauseln kommentiert",
         billableRate: 320,
         invoiceId: "inv-301"
+      },
+      {
+        id: "te-5003",
+        caseId: "ca-2047",
+        userId: "u-partner",
+        activity: "Nachlassgespräch mit Erben",
+        startedAt: "2025-10-12T09:00:00Z",
+        endedAt: "2025-10-12T10:30:00Z",
+        durationMinutes: 90,
+        notes: "Status und Verteilung abgestimmt",
+        billableRate: 320,
+        invoiceId: null
+      },
+      {
+        id: "te-5004",
+        caseId: "ca-2048",
+        userId: "u-associate",
+        activity: "Auditinterviews Technikteam",
+        startedAt: "2025-11-05T13:00:00Z",
+        endedAt: "2025-11-05T15:30:00Z",
+        durationMinutes: 150,
+        notes: "Offene Maßnahmen für TOMs gesammelt",
+        billableRate: 190,
+        invoiceId: null
+      },
+      {
+        id: "te-5005",
+        caseId: "ca-2049",
+        userId: "u-associate",
+        activity: "Arbeitsvertrag Nachprüfung",
+        startedAt: "2025-10-28T08:15:00Z",
+        endedAt: "2025-10-28T10:00:00Z",
+        durationMinutes: 105,
+        notes: "Klauseln vorbereitet",
+        billableRate: 180,
+        invoiceId: null
       }
     ],
     invoices: [
@@ -331,6 +448,56 @@
         dueDate: "2025-12-05",
         status: "versendet",
         totalNet: 560,
+        taxRate: 0.19,
+        currency: "EUR"
+      },
+      {
+        id: "inv-302",
+        caseId: "ca-2045",
+        clientId: "cl-lexon",
+        entryIds: ["te-5001"],
+        issueDate: "2025-11-22",
+        dueDate: "2025-12-15",
+        status: "versendet",
+        totalNet: 2150,
+        taxRate: 0.19,
+        currency: "EUR"
+      },
+      {
+        id: "inv-303",
+        caseId: "ca-2047",
+        clientId: "cl-petersen",
+        entryIds: ["te-5003"],
+        issueDate: "2025-10-10",
+        dueDate: "2025-10-30",
+        status: "überfällig",
+        totalNet: 2765,
+        taxRate: 0.19,
+        currency: "EUR",
+        paidDate: null
+      },
+      {
+        id: "inv-304",
+        caseId: "ca-2048",
+        clientId: "cl-futurelabs",
+        entryIds: ["te-5004"],
+        issueDate: "2025-11-08",
+        dueDate: "2025-11-22",
+        status: "bezahlt",
+        totalNet: 1150,
+        taxRate: 0.19,
+        currency: "EUR",
+        paidDate: "2025-11-15"
+      },
+      {
+        id: "inv-305",
+        caseId: "ca-2049",
+        clientId: "cl-schmidt",
+        entryIds: ["te-5005"],
+        issueDate: "2025-11-12",
+        dueDate: "2025-11-28",
+        status: "versendet",
+        totalNet: 850,
         taxRate: 0.19,
         currency: "EUR"
       }

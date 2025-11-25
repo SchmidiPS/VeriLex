@@ -1,6 +1,4 @@
 import { overlayInstance } from './app.js';
-
-const STORAGE_KEY = 'verilex:time-entries';
 const form = document.getElementById('invoice-form');
 
 if (!form) {
@@ -76,6 +74,10 @@ const state = {
   },
 };
 
+function getStore() {
+  return window.verilexStore;
+}
+
 function formatCurrency(value) {
   const number = Number.isFinite(value) ? value : 0;
   return new Intl.NumberFormat('de-DE', {
@@ -121,25 +123,6 @@ function formatDateRange(start, end) {
   return `${formattedStart} – ${formattedEnd}`;
 }
 
-function parseJSONElement(elementId) {
-  const element = document.getElementById(elementId);
-  if (!element) {
-    return null;
-  }
-  try {
-    const raw = element.textContent ?? 'null';
-    return JSON.parse(raw);
-  } catch (error) {
-    console.error(`JSON payload in element #${elementId} is invalid.`, error);
-    overlayInstance?.show?.({
-      title: 'Daten konnten nicht geladen werden',
-      message: 'Ein eingebetteter Datensatz für den Rechnungs-Wizard ist fehlerhaft.',
-      details: error,
-    });
-    return null;
-  }
-}
-
 function generateInternalId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -147,14 +130,28 @@ function generateInternalId() {
   return `invoice-${Math.random().toString(16).slice(2)}-${Date.now()}`;
 }
 
-function normalizeEntry(raw) {
+function normalizeEntry(raw, userMap = new Map()) {
   if (!raw || typeof raw !== 'object') {
     return null;
   }
 
-  const durationMs = Number(raw.durationMs);
-  const caseNumber = typeof raw.caseNumber === 'string' ? raw.caseNumber.trim() : '';
-  const directoryInfo = state.caseDirectory.get(caseNumber);
+  const directoryInfo =
+    state.caseDirectory.get(raw.caseNumber) || state.caseDirectory.get(raw.caseId);
+  const caseNumber =
+    typeof raw.caseNumber === 'string' && raw.caseNumber.trim()
+      ? raw.caseNumber.trim()
+      : directoryInfo?.caseNumber ?? '';
+
+  const durationMsCandidates = [
+    Number(raw.durationMs),
+    Number.isFinite(Number(raw.durationMinutes)) ? Number(raw.durationMinutes) * 60000 : NaN,
+  ];
+  const durationMs = durationMsCandidates.find((value) => Number.isFinite(value) && value >= 0) ?? 0;
+
+  const userRate = raw.userId ? userMap.get(raw.userId)?.billableRate : undefined;
+  const rateCandidates = [raw.rate, raw.billableRate, userRate, directoryInfo?.defaultRate, 180]
+    .map((value) => Number(value))
+    .find((value) => Number.isFinite(value) && value >= 0);
 
   const normalized = {
     id:
@@ -172,12 +169,10 @@ function normalizeEntry(raw) {
       typeof raw.client === 'string' && raw.client.trim()
         ? raw.client.trim()
         : directoryInfo?.client ?? 'Unzugeordneter Mandant',
-    durationMs: Number.isFinite(durationMs) ? Math.max(0, durationMs) : 0,
-    endedAt: raw.endedAt ?? raw.ended_at ?? null,
+    durationMs,
+    endedAt: raw.endedAt ?? raw.ended_at ?? raw.startedAt ?? null,
     notes: typeof raw.notes === 'string' ? raw.notes.trim() : '',
-    rate: Number.isFinite(Number(raw.rate))
-      ? Number(raw.rate)
-      : Number(directoryInfo?.defaultRate ?? 180),
+    rate: Number.isFinite(rateCandidates) ? rateCandidates : 0,
   };
 
   if (!normalized.caseNumber && directoryInfo?.caseNumber) {
@@ -188,71 +183,75 @@ function normalizeEntry(raw) {
 }
 
 function loadCaseDirectory() {
-  const directoryData = parseJSONElement('invoice-case-directory');
-  if (!Array.isArray(directoryData)) {
+  state.caseDirectory.clear();
+
+  const store = getStore();
+  if (!store) {
+    console.warn('Zentraler Store nicht verfügbar – Case Directory bleibt leer.');
     return;
   }
 
-  directoryData
-    .map((entry) => ({
-      caseNumber: typeof entry.caseNumber === 'string' ? entry.caseNumber.trim() : '',
-      title: typeof entry.title === 'string' ? entry.title.trim() : '',
-      client: typeof entry.client === 'string' ? entry.client.trim() : 'Unbekannter Mandant',
-      defaultRate: Number.isFinite(Number(entry.defaultRate))
-        ? Number(entry.defaultRate)
-        : undefined,
-    }))
-    .filter((entry) => entry.caseNumber)
-    .forEach((entry) => {
-      state.caseDirectory.set(entry.caseNumber, entry);
-    });
+  const users = store.getAll('User');
+  const userMap = new Map(users.map((user) => [user.id, user]));
+  const cases = store.getAll('Case');
+  const clients = store.getAll('Client');
+
+  cases.forEach((caseItem) => {
+    const caseNumber =
+      typeof caseItem.caseNumber === 'string' && caseItem.caseNumber.trim()
+        ? caseItem.caseNumber.trim()
+        : caseItem.id;
+    const client = clients.find((entry) => entry.id === caseItem.clientId);
+    const defaultRate = (caseItem.assignedUsers ?? [])
+      .map((id) => userMap.get(id)?.billableRate)
+      .find((value) => Number.isFinite(value));
+
+    const directoryEntry = {
+      caseId: caseItem.id,
+      caseNumber,
+      title: caseItem.title,
+      client: client?.name ?? 'Unbekannter Mandant',
+      clientId: caseItem.clientId,
+      defaultRate,
+    };
+
+    state.caseDirectory.set(caseNumber, directoryEntry);
+    state.caseDirectory.set(caseItem.id, directoryEntry);
+  });
 }
 
 function loadEntries() {
-  const storageEntries = loadEntriesFromStorage();
-  if (storageEntries.length > 0) {
-    return storageEntries;
-  }
-
-  const fallbackEntries = parseJSONElement('invoice-entry-data');
-  if (!Array.isArray(fallbackEntries)) {
-    return [];
-  }
-
-  return fallbackEntries
-    .map((entry) => normalizeEntry(entry))
-    .filter((entry) => entry !== null);
-}
-
-function loadEntriesFromStorage() {
-  if (typeof localStorage === 'undefined') {
-    return [];
-  }
-
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .map((entry) => normalizeEntry(entry))
-      .filter((entry) => entry !== null);
-  } catch (error) {
-    console.error('Invoice wizard could not parse stored time entries.', error);
+  const store = getStore();
+  if (!store) {
     overlayInstance?.show?.({
-      title: 'Gespeicherte Leistungen nicht verfügbar',
-      message:
-        'Die im Browser gespeicherten Leistungsdaten konnten nicht geladen werden. Es werden Demo-Daten verwendet.',
-      details: error,
+      title: 'Kein Datenstore verfügbar',
+      message: 'Der zentrale Store konnte nicht geladen werden. Leistungen können nicht übernommen werden.',
     });
     return [];
   }
+
+  const users = store.getAll('User');
+  const userMap = new Map(users.map((user) => [user.id, user]));
+  const rawEntries = store.getAll('TimeEntry').filter((entry) => !entry.invoiceId);
+
+  return rawEntries
+    .map((entry) =>
+      normalizeEntry(
+        {
+          ...entry,
+          durationMs: Number.isFinite(Number(entry.durationMinutes))
+            ? Number(entry.durationMinutes) * 60000
+            : entry.durationMs,
+          caseNumber: state.caseDirectory.get(entry.caseId)?.caseNumber ?? entry.caseNumber,
+          caseId: entry.caseId,
+          caseTitle: state.caseDirectory.get(entry.caseId)?.title ?? entry.caseTitle,
+          client: state.caseDirectory.get(entry.caseId)?.client,
+          rate: entry.billableRate ?? entry.rate,
+        },
+        userMap
+      )
+    )
+    .filter((entry) => entry !== null);
 }
 
 function setFieldError(field, errorElement, message) {
@@ -409,6 +408,28 @@ function filterEntries() {
 
   prepareLineItems();
   updateFilterSummary();
+}
+
+function reloadEntriesFromStore() {
+  const previousClient = state.selectedClient;
+  const previousCase = state.selectedCase;
+
+  loadCaseDirectory();
+  state.entries = loadEntries();
+
+  populateClientOptions();
+  if (previousClient && clientSelect?.querySelector(`option[value="${previousClient}"]`)) {
+    clientSelect.value = previousClient;
+    state.selectedClient = previousClient;
+  }
+
+  populateCaseOptions(clientSelect?.value ?? '');
+  if (previousCase && caseSelect?.querySelector(`option[value="${previousCase}"]`)) {
+    caseSelect.value = previousCase;
+    state.selectedCase = previousCase;
+  }
+
+  filterEntries();
 }
 
 function prepareLineItems() {
@@ -773,6 +794,62 @@ function updatePreview() {
   }
 }
 
+function deriveSelectedCaseInfo() {
+  if (state.selectedCase) {
+    return state.caseDirectory.get(state.selectedCase);
+  }
+
+  const fallbackCaseNumber = state.lineItems[0]?.caseNumber;
+  if (fallbackCaseNumber) {
+    return state.caseDirectory.get(fallbackCaseNumber);
+  }
+  return null;
+}
+
+function persistInvoiceToStore() {
+  const store = getStore();
+  if (!store) {
+    return;
+  }
+
+  const selectedItems = state.lineItems.filter((item) => state.selectedEntryIds.includes(item.id));
+  if (!selectedItems.length) {
+    return;
+  }
+
+  const caseInfo = deriveSelectedCaseInfo();
+  if (!caseInfo?.caseId || !caseInfo?.clientId) {
+    overlayInstance?.show?.({
+      title: 'Akte nicht ausgewählt',
+      message: 'Bitte wählen Sie eine Akte aus, damit die Rechnung zugeordnet werden kann.',
+    });
+    return;
+  }
+
+  const net = selectedItems.reduce((sum, item) => sum + item.hours * item.rate, 0);
+  const taxRatePercent = getTaxRate();
+  const taxRateDecimal = taxRatePercent / 100;
+
+  const invoicePayload = {
+    caseId: caseInfo.caseId,
+    clientId: caseInfo.clientId,
+    entryIds: state.selectedEntryIds,
+    issueDate: state.invoiceDetails.invoiceDate,
+    dueDate: state.invoiceDetails.dueDate,
+    status: 'versendet',
+    totalNet: net,
+    taxRate: taxRateDecimal,
+    currency: 'EUR',
+    invoiceNumber: state.invoiceDetails.number,
+    note: state.invoiceDetails.notes,
+  };
+
+  const savedInvoice = store.addInvoice(invoicePayload);
+  state.selectedEntryIds.forEach((entryId) => {
+    store.updateTimeEntry(entryId, { invoiceId: savedInvoice.id });
+  });
+}
+
 function handleRateChange(event) {
   const target = event.target;
   if (!(target instanceof HTMLInputElement)) {
@@ -881,6 +958,31 @@ function populateCaseOptions(client) {
   });
 }
 
+function registerStoreListeners() {
+  const store = getStore();
+  if (!store?.on) {
+    return;
+  }
+
+  const events = [
+    'timeEntryAdded',
+    'timeEntryUpdated',
+    'timeEntryRemoved',
+    'caseAdded',
+    'caseUpdated',
+    'caseRemoved',
+    'invoiceAdded',
+    'invoiceUpdated',
+    'invoiceRemoved',
+    'storeReset',
+    'storeReady',
+  ];
+
+  events.forEach((eventName) => {
+    store.on(eventName, reloadEntriesFromStore);
+  });
+}
+
 function handleNext() {
   if (!validateStep(state.activeStep)) {
     return;
@@ -898,6 +1000,8 @@ function handleSubmit(event) {
     return;
   }
 
+  persistInvoiceDetails();
+  persistInvoiceToStore();
   updatePreview();
   form?.setAttribute('hidden', '');
   successMessage?.removeAttribute('hidden');
@@ -921,10 +1025,8 @@ function resetWizard() {
     notes: '',
   };
 
-  populateClientOptions();
-  populateCaseOptions('');
+  reloadEntriesFromStore();
   applyDefaultInvoiceValues();
-  filterEntries();
   form?.removeAttribute('hidden');
   successMessage?.setAttribute('hidden', '');
   showStep(1);
@@ -1010,19 +1112,10 @@ function initializeWizard() {
     return;
   }
 
-  loadCaseDirectory();
-  state.entries = loadEntries();
-
-  populateClientOptions();
-  if (clientSelect?.value) {
-    populateCaseOptions(clientSelect.value);
-  } else {
-    populateCaseOptions('');
-  }
-
+  reloadEntriesFromStore();
   applyDefaultInvoiceValues();
-  filterEntries();
   attachEventListeners();
+  registerStoreListeners();
   showStep(1);
 }
 
