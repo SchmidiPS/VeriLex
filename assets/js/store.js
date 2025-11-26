@@ -6,7 +6,10 @@ const ENTITY_COLLECTIONS = {
   TimeEntry: 'timeEntries',
   Invoice: 'invoices',
   ComplianceItem: 'complianceItems',
-  Appointment: 'appointments'
+  Appointment: 'appointments',
+  Communication: 'communications',
+  Template: 'templates',
+  Workflow: 'workflows'
 };
 
 const ENTITY_PREFIX = {
@@ -17,7 +20,10 @@ const ENTITY_PREFIX = {
   TimeEntry: 'te',
   Invoice: 'inv',
   ComplianceItem: 'co',
-  Appointment: 'ap'
+  Appointment: 'ap',
+  Communication: 'cm',
+  Template: 'tpl',
+  Workflow: 'wf'
 };
 
 class VeriLexEventBus {
@@ -62,6 +68,7 @@ class VeriLexStore {
     this.enablePersistence = enablePersistence;
     this.eventBus = new VeriLexEventBus();
     this.data = this.createEmptyState();
+    this.activeContext = this.loadActiveContext();
   }
 
   createEmptyState() {
@@ -124,6 +131,39 @@ class VeriLexStore {
     }
   }
 
+  loadActiveContext() {
+    if (typeof localStorage === 'undefined') {
+      return { caseId: null, clientId: null };
+    }
+
+    try {
+      const raw = localStorage.getItem('verilex:active-context');
+      if (!raw) return { caseId: null, clientId: null };
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') {
+        return { caseId: null, clientId: null };
+      }
+
+      return { caseId: parsed.caseId ?? null, clientId: parsed.clientId ?? null };
+    } catch (error) {
+      console.warn('Konnte aktive Auswahl nicht laden.', error);
+      return { caseId: null, clientId: null };
+    }
+  }
+
+  persistActiveContext() {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    try {
+      localStorage.setItem('verilex:active-context', JSON.stringify(this.activeContext));
+    } catch (error) {
+      console.warn('Aktiven Kontext konnte nicht gespeichert werden.', error);
+    }
+  }
+
   validateStateShape(candidate) {
     if (!candidate || typeof candidate !== 'object') return false;
     return Object.values(ENTITY_COLLECTIONS).every((collectionKey) => Array.isArray(candidate[collectionKey]));
@@ -141,12 +181,14 @@ class VeriLexStore {
     if (storedState) {
       this.data = storedState;
       this.eventBus.emit('storeReady', { source: 'storage' });
+      this.emitActiveContext();
       return;
     }
 
     this.data = this.cloneData(this.loadSampleData());
     this.persist();
     this.eventBus.emit('storeReady', { source: 'sample' });
+    this.emitActiveContext();
   }
 
   exportData() {
@@ -157,6 +199,7 @@ class VeriLexStore {
     this.data = this.cloneData(this.loadSampleData());
     this.persist();
     this.eventBus.emit('storeReset', { source: 'sample' });
+    this.emitActiveContext();
   }
 
   resetWithPayload(payload) {
@@ -166,6 +209,7 @@ class VeriLexStore {
     this.data = this.cloneData(payload);
     this.persist();
     this.eventBus.emit('storeReset', { source: 'custom' });
+    this.emitActiveContext();
   }
 
   findEntity(entityName, id) {
@@ -220,6 +264,36 @@ class VeriLexStore {
     return true;
   }
 
+  emitActiveContext() {
+    this.eventBus.emit('activeContextChanged', this.getActiveContext());
+  }
+
+  setActiveContext({ caseId = null, clientId = null }) {
+    this.activeContext = { caseId, clientId };
+    this.persistActiveContext();
+    this.emitActiveContext();
+  }
+
+  setActiveCase(caseId) {
+    const resolvedCaseId = caseId ?? null;
+    const foundCase = resolvedCaseId ? this.findEntity('Case', resolvedCaseId) : null;
+    const derivedClientId = foundCase?.clientId ?? this.activeContext.clientId ?? null;
+    this.setActiveContext({ caseId: resolvedCaseId, clientId: derivedClientId });
+  }
+
+  setActiveClient(clientId) {
+    this.setActiveContext({ ...this.activeContext, clientId });
+  }
+
+  getActiveContext() {
+    return this.cloneData(this.activeContext);
+  }
+
+  getActiveCase() {
+    if (!this.activeContext.caseId) return null;
+    return this.findEntity('Case', this.activeContext.caseId);
+  }
+
   emitEntityEvent(entityName, action, record) {
     const entityEventName = `${this.toCamel(entityName)}${this.capitalize(action)}`;
     this.eventBus.emit(entityEventName, { entity: entityName, record: this.cloneData(record) });
@@ -269,6 +343,30 @@ class VeriLexStore {
 
   updateInvoice(id, updates) {
     return this.updateEntity('Invoice', id, updates);
+  }
+
+  addCommunication(data) {
+    return this.addEntity('Communication', data);
+  }
+
+  updateCommunication(id, updates) {
+    return this.updateEntity('Communication', id, updates);
+  }
+
+  addTemplate(data) {
+    return this.addEntity('Template', data);
+  }
+
+  updateTemplate(id, updates) {
+    return this.updateEntity('Template', id, updates);
+  }
+
+  addWorkflow(data) {
+    return this.addEntity('Workflow', data);
+  }
+
+  updateWorkflow(id, updates) {
+    return this.updateEntity('Workflow', id, updates);
   }
 }
 

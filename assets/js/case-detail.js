@@ -344,10 +344,15 @@ function buildTimeline(caseData, lookups) {
   return sortTimeline([...documents, ...complianceItems, ...appointments, ...timeEntries, ...caseDeadlines]);
 }
 
-function getActiveCase(cases) {
+function getActiveCase(cases, store) {
   const params = new URLSearchParams(window.location.search);
   const caseId = params.get('id');
   const caseNumber = params.get('case');
+
+  const activeContextCase = store?.getActiveCase?.();
+  if (activeContextCase) {
+    return activeContextCase;
+  }
 
   if (caseId) {
     const matchById = cases.find((entry) => entry.id === caseId);
@@ -414,7 +419,7 @@ function renderCaseDetailFromStore() {
     return;
   }
 
-  const currentCase = getActiveCase(lookups.cases);
+  const currentCase = getActiveCase(lookups.cases, store);
   if (!currentCase) {
     overlayInstance?.show?.({
       title: 'Akte nicht gefunden',
@@ -436,6 +441,7 @@ function initCaseDetail() {
   verilexStore.on('storeReady', renderCaseDetailFromStore);
   verilexStore.on('storeChanged', renderCaseDetailFromStore);
   verilexStore.on('storeReset', renderCaseDetailFromStore);
+  verilexStore.on('activeContextChanged', renderCaseDetailFromStore);
 }
 
 initCaseDetail();

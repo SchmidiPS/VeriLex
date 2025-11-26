@@ -203,6 +203,11 @@ function resolveDefaultCaseId() {
   return cases[0]?.id ?? null;
 }
 
+function resolveActiveCaseId() {
+  const activeContext = verilexStore?.getActiveContext?.();
+  return activeContext?.caseId ?? resolveDefaultCaseId();
+}
+
 function resolveUserIdForRole(roleId) {
   const normalized = normalizeRoleId(roleId);
   const fallbackUser = verilexStore.getAll('User')[0];
@@ -710,7 +715,7 @@ function createDocumentPayloadFromFile(file) {
 
   return normalizeDocument({
     id: createDocumentId(),
-    caseId: resolveDefaultCaseId(),
+    caseId: resolveActiveCaseId(),
     name: file.name ?? 'Unbenannt',
     title: file.name ?? 'Unbenannt',
     mimeType: file.type ?? 'application/octet-stream',

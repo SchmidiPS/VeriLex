@@ -1,3 +1,5 @@
+import { verilexStore } from './store.js';
+
 const dataElement = document.getElementById('mail-data');
 
 function parseMailData() {
@@ -125,10 +127,75 @@ function truncateText(text, length) {
   return `${trimmed.slice(0, length - 1).trim()}…`;
 }
 
-const messages = parseMailData();
-const messageMap = new Map(messages.map((message) => [message.id, message]));
+function ensureStoreSeeded() {
+  const hasStoreData = (verilexStore?.getAll('Communication') ?? []).length > 0;
+  if (hasStoreData) {
+    return;
+  }
+
+  const fallbackMessages = parseMailData();
+  fallbackMessages.forEach((message) => {
+    verilexStore?.addCommunication?.({
+      id: message.id,
+      subject: message.subject,
+      caseId: message.caseId || null,
+      clientId: message.clientId || null,
+      sender: message.sender,
+      recipients: message.to,
+      cc: message.cc,
+      receivedAt: message.receivedAt?.toISOString?.() ?? new Date().toISOString(),
+      status: message.status,
+      tags: message.tags,
+      body: message.body,
+      attachments: message.attachments,
+    });
+  });
+}
+
+function normalizeCommunication(entry, caseLookup, clientLookup) {
+  const receivedAt = new Date(entry.receivedAt ?? Date.now());
+  const caseInfo = entry.caseId ? caseLookup.get(entry.caseId) : null;
+  const clientInfo = entry.clientId ? clientLookup.get(entry.clientId) : null;
+
+  return {
+    id: String(entry.id ?? entry.communicationId ?? `mail-${Math.random().toString(16).slice(2, 8)}`),
+    subject: String(entry.subject ?? 'Ohne Betreff').trim() || 'Ohne Betreff',
+    caseId: entry.caseId ?? null,
+    caseNumber: caseInfo?.caseNumber ?? entry.caseNumber ?? '–',
+    client: clientInfo?.name ?? entry.client ?? '–',
+    sender: entry.sender ?? { name: 'Unbekannt', email: 'unbekannt@example.com' },
+    to: Array.isArray(entry.recipients) ? entry.recipients : [],
+    cc: Array.isArray(entry.cc) ? entry.cc : [],
+    receivedAt,
+    status: normalizeStatus(entry.status),
+    tags: Array.isArray(entry.tags) ? entry.tags : [],
+    body: Array.isArray(entry.body)
+      ? entry.body.map((line) => String(line ?? '').trim()).filter(Boolean)
+      : [String(entry.body ?? '').trim()].filter(Boolean),
+    attachments: Array.isArray(entry.attachments)
+      ? entry.attachments.map((attachment) => ({
+          name: String(attachment?.name ?? '').trim(),
+          url: String(attachment?.url ?? '').trim(),
+        }))
+      : [],
+    snippet: createSnippet(entry),
+  };
+}
+
+function refreshMessagesFromStore() {
+  const caseLookup = new Map((verilexStore?.getAll('Case') ?? []).map((item) => [item.id, item]));
+  const clientLookup = new Map((verilexStore?.getAll('Client') ?? []).map((item) => [item.id, item]));
+  const communications = verilexStore?.getAll('Communication') ?? [];
+
+  state.messages = communications
+    .map((entry) => normalizeCommunication(entry, caseLookup, clientLookup))
+    .sort(sortByReceivedDesc);
+  state.messageMap = new Map(state.messages.map((message) => [message.id, message]));
+}
 
 const state = {
+  messages: [],
+  messageMap: new Map(),
   selectedId: null,
   filters: {
     query: '',
@@ -177,7 +244,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('de-DE', {
 const relativeFormatter = new Intl.RelativeTimeFormat('de', { numeric: 'auto' });
 
 function getFilteredMessages() {
-  return messages
+  return state.messages
     .filter((message) => {
       if (state.filters.status === 'unread' && message.status !== 'unread') {
         return false;
@@ -208,9 +275,9 @@ function getFilteredMessages() {
 }
 
 function updateCounts() {
-  totalCountElement.textContent = messages.length.toString();
-  const unreadCount = messages.filter((message) => message.status === 'unread').length;
-  const archivedCount = messages.filter((message) => message.status === 'archived').length;
+  totalCountElement.textContent = state.messages.length.toString();
+  const unreadCount = state.messages.filter((message) => message.status === 'unread').length;
+  const archivedCount = state.messages.filter((message) => message.status === 'archived').length;
   unreadCountElement.textContent = unreadCount.toString();
   archivedCountElement.textContent = archivedCount.toString();
 }
@@ -242,7 +309,7 @@ function populateTagFilterOptions() {
   }
 
   const uniqueTags = new Set();
-  messages.forEach((message) => {
+  state.messages.forEach((message) => {
     message.tags.forEach((tag) => uniqueTags.add(tag));
   });
 
@@ -503,7 +570,7 @@ function formatRecipientList(to, cc) {
 }
 
 function selectMessage(id) {
-  if (!messageMap.has(id)) {
+  if (!state.messageMap.has(id)) {
     return;
   }
   state.selectedId = id;
@@ -520,21 +587,21 @@ function focusSelectedItem() {
 }
 
 function toggleReadStatus() {
-  const message = messageMap.get(state.selectedId);
+  const message = state.messageMap.get(state.selectedId);
   if (!message) {
     return;
   }
-  message.status = message.status === 'unread' ? 'read' : 'unread';
-  updateView();
+  const nextStatus = message.status === 'unread' ? 'read' : 'unread';
+  verilexStore.updateCommunication(message.id, { status: nextStatus });
 }
 
 function toggleArchiveStatus() {
-  const message = messageMap.get(state.selectedId);
+  const message = state.messageMap.get(state.selectedId);
   if (!message) {
     return;
   }
-  message.status = message.status === 'archived' ? 'read' : 'archived';
-  updateView();
+  const nextStatus = message.status === 'archived' ? 'read' : 'archived';
+  verilexStore.updateCommunication(message.id, { status: nextStatus });
 }
 
 function updateView() {
@@ -547,9 +614,15 @@ function updateView() {
   }
 
   renderList(filtered);
-  renderDetail(state.selectedId ? messageMap.get(state.selectedId) ?? null : null);
+  renderDetail(state.selectedId ? state.messageMap.get(state.selectedId) ?? null : null);
   updateCounts();
   updateFilterControls();
+}
+
+function handleStoreUpdate() {
+  refreshMessagesFromStore();
+  populateTagFilterOptions();
+  updateView();
 }
 
 if (searchInput) {
@@ -639,6 +712,12 @@ if (archiveButton) {
   });
 }
 
+ensureStoreSeeded();
+refreshMessagesFromStore();
+verilexStore?.on?.('communicationAdded', handleStoreUpdate);
+verilexStore?.on?.('communicationUpdated', handleStoreUpdate);
+verilexStore?.on?.('communicationRemoved', handleStoreUpdate);
+
 populateTagFilterOptions();
-updateView();
+handleStoreUpdate();
 

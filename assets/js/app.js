@@ -6,6 +6,7 @@ import {
   writeMockSession,
   writeStoredRole,
 } from './auth-utils.js';
+import { verilexStore } from './store.js';
 
 const THEME_STORAGE_KEY = 'verilex:theme-preference';
 const THEMES = {
@@ -16,6 +17,8 @@ const THEMES = {
 let currentTheme = THEMES.LIGHT;
 let hasExplicitThemeChoice = false;
 let themeToggleEl = null;
+let contextSelectEl = null;
+let contextLabelEl = null;
 
 const originalHiddenState = new WeakMap();
 let activeRoleId = null;
@@ -120,6 +123,76 @@ function ensureProfileControlRoot() {
   }
 
   return profileControlRoot;
+}
+
+function deriveContextOptions() {
+  if (!verilexStore) return [];
+  const clients = new Map((verilexStore.getAll('Client') ?? []).map((client) => [client.id, client]));
+  return (verilexStore.getAll('Case') ?? []).map((entry) => {
+    const client = entry.clientId ? clients.get(entry.clientId) : null;
+    const clientName = client?.name ? ` · ${client.name}` : '';
+    return {
+      id: entry.id,
+      label: `${entry.caseNumber ?? 'AZ unbekannt'} – ${entry.title ?? 'Ohne Titel'}${clientName}`,
+    };
+  });
+}
+
+function renderContextSelector() {
+  const root = ensureProfileControlRoot();
+  if (!root || !verilexStore) {
+    return;
+  }
+
+  const options = deriveContextOptions();
+  if (options.length === 0) {
+    if (contextSelectEl && root.contains(contextSelectEl)) {
+      contextSelectEl.remove();
+    }
+    if (contextLabelEl && root.contains(contextLabelEl)) {
+      contextLabelEl.remove();
+    }
+    return;
+  }
+
+  if (!contextLabelEl) {
+    contextLabelEl = document.createElement('label');
+    contextLabelEl.className = 'context-switcher__label';
+    contextLabelEl.textContent = 'Aktives Mandat';
+  }
+
+  if (!contextSelectEl) {
+    contextSelectEl = document.createElement('select');
+    contextSelectEl.className = 'context-switcher';
+    contextSelectEl.addEventListener('change', (event) => {
+      const value = event.target.value;
+      verilexStore.setActiveCase(value || null);
+    });
+  }
+
+  contextSelectEl.innerHTML = '';
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = 'Alle Mandate';
+  contextSelectEl.append(defaultOption);
+
+  options.forEach((option) => {
+    const node = document.createElement('option');
+    node.value = option.id;
+    node.textContent = option.label;
+    contextSelectEl.append(node);
+  });
+
+  const activeContext = verilexStore.getActiveContext();
+  const activeCaseId = activeContext?.caseId ?? '';
+  contextSelectEl.value = activeCaseId;
+
+  if (!root.contains(contextLabelEl)) {
+    root.append(contextLabelEl);
+  }
+  if (!root.contains(contextSelectEl)) {
+    root.append(contextSelectEl);
+  }
 }
 
 function initThemeToggle() {
@@ -577,6 +650,7 @@ function initRoleAccessControl() {
 initSecurityBanner();
 initializeNavigation();
 initThemeToggle();
+renderContextSelector();
 initRoleAccessControl();
 
 class GlobalErrorOverlay {
@@ -715,6 +789,12 @@ function initGlobalErrorHandling() {
 }
 
 const overlayInstance = initGlobalErrorHandling();
+
+if (verilexStore) {
+  ['storeReady', 'storeReset', 'storeChanged', 'activeContextChanged'].forEach((eventName) =>
+    verilexStore.on(eventName, renderContextSelector)
+  );
+}
 
 const demoButton = document.getElementById('trigger-demo-error');
 if (demoButton) {
