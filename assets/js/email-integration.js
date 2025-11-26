@@ -127,19 +127,31 @@ function truncateText(text, length) {
   return `${trimmed.slice(0, length - 1).trim()}…`;
 }
 
+function buildCaseNumberLookup() {
+  const cases = verilexStore?.getAll('Case') ?? [];
+  return new Map(
+    cases
+      .map((caseEntry) => [String(caseEntry.caseNumber ?? '').trim(), caseEntry])
+      .filter(([key]) => key)
+  );
+}
+
 function ensureStoreSeeded() {
   const hasStoreData = (verilexStore?.getAll('Communication') ?? []).length > 0;
   if (hasStoreData) {
     return;
   }
 
+  const caseNumberLookup = buildCaseNumberLookup();
   const fallbackMessages = parseMailData();
   fallbackMessages.forEach((message) => {
+    const matchedCase = caseNumberLookup.get(message.caseNumber);
     verilexStore?.addCommunication?.({
       id: message.id,
       subject: message.subject,
-      caseId: message.caseId || null,
-      clientId: message.clientId || null,
+      caseId: message.caseId || matchedCase?.id || null,
+      caseNumber: message.caseNumber,
+      clientId: message.clientId || matchedCase?.clientId || null,
       sender: message.sender,
       recipients: message.to,
       cc: message.cc,
@@ -152,16 +164,22 @@ function ensureStoreSeeded() {
   });
 }
 
-function normalizeCommunication(entry, caseLookup, clientLookup) {
+function normalizeCommunication(entry, caseLookup, clientLookup, caseNumberLookup) {
   const receivedAt = new Date(entry.receivedAt ?? Date.now());
-  const caseInfo = entry.caseId ? caseLookup.get(entry.caseId) : null;
-  const clientInfo = entry.clientId ? clientLookup.get(entry.clientId) : null;
+  const rawCaseNumber = String(entry.caseNumber ?? '').trim();
+  const caseInfo = entry.caseId ? caseLookup.get(entry.caseId) : caseNumberLookup.get(rawCaseNumber);
+  const resolvedCaseId = entry.caseId ?? caseInfo?.id ?? null;
+  const clientInfo = entry.clientId
+    ? clientLookup.get(entry.clientId)
+    : caseInfo?.clientId
+      ? clientLookup.get(caseInfo.clientId)
+      : null;
 
   return {
     id: String(entry.id ?? entry.communicationId ?? `mail-${Math.random().toString(16).slice(2, 8)}`),
     subject: String(entry.subject ?? 'Ohne Betreff').trim() || 'Ohne Betreff',
-    caseId: entry.caseId ?? null,
-    caseNumber: caseInfo?.caseNumber ?? entry.caseNumber ?? '–',
+    caseId: resolvedCaseId,
+    caseNumber: caseInfo?.caseNumber ?? rawCaseNumber || '–',
     client: clientInfo?.name ?? entry.client ?? '–',
     sender: entry.sender ?? { name: 'Unbekannt', email: 'unbekannt@example.com' },
     to: Array.isArray(entry.recipients) ? entry.recipients : [],
@@ -183,12 +201,18 @@ function normalizeCommunication(entry, caseLookup, clientLookup) {
 }
 
 function refreshMessagesFromStore() {
-  const caseLookup = new Map((verilexStore?.getAll('Case') ?? []).map((item) => [item.id, item]));
+  const cases = verilexStore?.getAll('Case') ?? [];
+  const caseLookup = new Map(cases.map((item) => [item.id, item]));
+  const caseNumberLookup = new Map(
+    cases
+      .map((item) => [String(item.caseNumber ?? '').trim(), item])
+      .filter(([key]) => key)
+  );
   const clientLookup = new Map((verilexStore?.getAll('Client') ?? []).map((item) => [item.id, item]));
   const communications = verilexStore?.getAll('Communication') ?? [];
 
   state.messages = communications
-    .map((entry) => normalizeCommunication(entry, caseLookup, clientLookup))
+    .map((entry) => normalizeCommunication(entry, caseLookup, clientLookup, caseNumberLookup))
     .sort(sortByReceivedDesc);
   state.messageMap = new Map(state.messages.map((message) => [message.id, message]));
 }
@@ -714,9 +738,13 @@ if (archiveButton) {
 
 ensureStoreSeeded();
 refreshMessagesFromStore();
-verilexStore?.on?.('communicationAdded', handleStoreUpdate);
-verilexStore?.on?.('communicationUpdated', handleStoreUpdate);
-verilexStore?.on?.('communicationRemoved', handleStoreUpdate);
+verilexStore?.on?.('storeReady', handleStoreUpdate);
+verilexStore?.on?.('storeReset', handleStoreUpdate);
+verilexStore?.on?.('storeChanged', (event) => {
+  if (!event?.entity || ['Communication', 'Case', 'Client'].includes(event.entity)) {
+    handleStoreUpdate();
+  }
+});
 
 populateTagFilterOptions();
 handleStoreUpdate();

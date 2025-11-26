@@ -1,4 +1,4 @@
-const dataElement = document.getElementById('deadline-data');
+import { verilexStore } from './store.js';
 
 const statusConfigurations = [
   {
@@ -50,87 +50,90 @@ const relativeFormatter = new Intl.RelativeTimeFormat('de', {
   numeric: 'auto',
 });
 
-function parseISODate(value) {
-  if (typeof value !== 'string' || value.trim() === '') {
+function parseDateValue(value) {
+  if (!value) {
     return null;
   }
 
-  const trimmed = value.trim();
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
-  if (!match) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
     return null;
   }
 
-  const [, yearStr, monthStr, dayStr] = match;
-  const year = Number.parseInt(yearStr, 10);
-  const month = Number.parseInt(monthStr, 10);
-  const day = Number.parseInt(dayStr, 10);
-
-  if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
-    return null;
-  }
-
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return Number.isNaN(date.getTime()) ? null : date;
+  return date;
 }
 
-function normalizeDeadline(entry, index) {
-  const statusValue = String(entry.status ?? 'upcoming').toLowerCase();
-  const status = allowedStatuses.has(statusValue) ? statusValue : 'upcoming';
-  const tags = Array.isArray(entry.tags)
-    ? entry.tags
+function deriveStatus(dueDate, completedDate) {
+  if (completedDate instanceof Date && !Number.isNaN(completedDate.getTime())) {
+    return 'completed';
+  }
+
+  if (!(dueDate instanceof Date) || Number.isNaN(dueDate.getTime())) {
+    return 'upcoming';
+  }
+
+  const todayUTC = getTodayUTC();
+  const dueUTC = toUTC(dueDate);
+
+  if (dueUTC == null) {
+    return 'upcoming';
+  }
+
+  if (dueUTC < todayUTC) {
+    return 'overdue';
+  }
+
+  if (dueUTC === todayUTC) {
+    return 'today';
+  }
+
+  if (dueUTC - todayUTC <= 7 * 24 * 60 * 60 * 1000) {
+    return 'soon';
+  }
+
+  return 'upcoming';
+}
+
+function toDeadlineRecord({
+  id,
+  title,
+  caseNumber,
+  client,
+  dueDateValue,
+  completedDateValue = null,
+  responsible,
+  type,
+  notes,
+  location,
+  tags = [],
+}) {
+  const dueDate = parseDateValue(dueDateValue);
+  const completedDate = parseDateValue(completedDateValue);
+  const status = deriveStatus(dueDate, completedDate);
+  const normalizedTags = Array.isArray(tags)
+    ? tags
         .map((tag) => String(tag ?? '').trim())
         .filter(Boolean)
     : [];
 
   return {
-    id: String(entry.id ?? `deadline-${index}`),
-    title: String(entry.title ?? 'Unbenannte Frist').trim() || 'Unbenannte Frist',
-    caseNumber: String(entry.caseNumber ?? '').trim(),
-    client: String(entry.client ?? '').trim(),
-    dueDate: parseISODate(entry.dueDate),
-    dueDateRaw: String(entry.dueDate ?? '').trim(),
-    completedDate: parseISODate(entry.completedDate),
-    status,
-    responsible: String(entry.responsible ?? 'Unzugewiesen').trim() || 'Unzugewiesen',
-    type: String(entry.type ?? '').trim(),
-    notes: String(entry.notes ?? '').trim(),
-    location: String(entry.location ?? '').trim(),
-    tags,
+    id: String(id ?? crypto.randomUUID?.() ?? `deadline-${Date.now()}`),
+    title: String(title ?? 'Unbenannte Frist').trim() || 'Unbenannte Frist',
+    caseNumber: String(caseNumber ?? '').trim(),
+    client: String(client ?? '').trim(),
+    dueDate,
+    dueDateRaw: typeof dueDateValue === 'string' ? dueDateValue.trim() : '',
+    completedDate,
+    status: allowedStatuses.has(status) ? status : 'upcoming',
+    responsible: String(responsible ?? 'Unzugewiesen').trim() || 'Unzugewiesen',
+    type: String(type ?? '').trim(),
+    notes: String(notes ?? '').trim(),
+    location: String(location ?? '').trim(),
+    tags: normalizedTags,
   };
 }
 
-function loadDeadlines() {
-  if (!dataElement) {
-    console.warn('Deadline data element not found.');
-    return [];
-  }
-
-  try {
-    const raw = dataElement.textContent ?? '[]';
-    const parsed = JSON.parse(raw);
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.map((entry, index) => normalizeDeadline(entry, index));
-  } catch (error) {
-    console.error('Die Fristendaten konnten nicht interpretiert werden.', error);
-    window.dispatchEvent(
-      new CustomEvent('verilex:error', {
-        detail: {
-          title: 'Fehler beim Laden der Fristen',
-          message: 'Die Fristen konnten nicht geladen werden.',
-          details: error,
-        },
-      })
-    );
-    return [];
-  }
-}
-
-const deadlines = loadDeadlines();
+let deadlines = [];
 
 const columnsContainer = document.getElementById('deadline-columns');
 const emptyStateElement = document.getElementById('deadline-empty-state');
@@ -168,6 +171,116 @@ function toUTC(date) {
     return null;
   }
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
+function deriveResponsible(caseEntry, userLookup) {
+  if (!caseEntry) {
+    return 'Unzugewiesen';
+  }
+
+  const firstAssignee = Array.isArray(caseEntry.assignedUsers)
+    ? caseEntry.assignedUsers.find((userId) => typeof userId === 'string' && userId.trim() !== '')
+    : null;
+  if (firstAssignee) {
+    const user = userLookup.get(firstAssignee);
+    if (user?.name) {
+      return user.name;
+    }
+  }
+
+  return 'Unzugewiesen';
+}
+
+function buildDeadlineEntriesFromStore() {
+  const cases = verilexStore?.getAll('Case') ?? [];
+  const clients = new Map((verilexStore?.getAll('Client') ?? []).map((client) => [client.id, client]));
+  const users = new Map((verilexStore?.getAll('User') ?? []).map((user) => [user.id, user]));
+  const complianceItems = verilexStore?.getAll('ComplianceItem') ?? [];
+  const appointments = verilexStore?.getAll('Appointment') ?? [];
+
+  const deadlineRecords = [];
+
+  cases.forEach((caseEntry) => {
+    const clientName = clients.get(caseEntry.clientId)?.name ?? '';
+    const responsible = deriveResponsible(caseEntry, users);
+    const caseNumber = String(caseEntry.caseNumber ?? '').trim();
+
+    if (Array.isArray(caseEntry.deadlines)) {
+      caseEntry.deadlines.forEach((deadline) => {
+        const tags = [];
+        if (deadline.risk) {
+          tags.push(`Risiko: ${deadline.risk}`);
+        }
+        if (Array.isArray(deadline.tags)) {
+          tags.push(...deadline.tags);
+        }
+
+        deadlineRecords.push(
+          toDeadlineRecord({
+            id: deadline.id,
+            title: deadline.title,
+            caseNumber,
+            client: clientName,
+            dueDateValue: deadline.date,
+            responsible,
+            type: deadline.type ?? 'Frist',
+            notes: deadline.notes,
+            tags,
+          })
+        );
+      });
+    }
+  });
+
+  complianceItems.forEach((item) => {
+    const relatedCase = cases.find((caseEntry) => caseEntry.id === item.caseId) ?? null;
+    const caseNumber = relatedCase?.caseNumber ?? '';
+    const clientName = relatedCase ? clients.get(relatedCase.clientId)?.name ?? '' : '';
+    const responsible = (item.ownerId && users.get(item.ownerId)?.name) || deriveResponsible(relatedCase, users);
+
+    deadlineRecords.push(
+      toDeadlineRecord({
+        id: item.id,
+        title: item.title,
+        caseNumber,
+        client: clientName,
+        dueDateValue: item.deadline,
+        completedDateValue: item.completedAt ?? null,
+        responsible,
+        type: 'Compliance',
+        notes: item.notes,
+        tags: item.risk ? [`Risiko: ${item.risk}`] : [],
+      })
+    );
+  });
+
+  appointments.forEach((appointment) => {
+    const relatedCase = cases.find((caseEntry) => caseEntry.id === appointment.caseId) ?? null;
+    const caseNumber = relatedCase?.caseNumber ?? '';
+    const clientName = relatedCase ? clients.get(relatedCase.clientId)?.name ?? '' : '';
+    const participantNames = Array.isArray(appointment.participants)
+      ? appointment.participants
+          .map((userId) => users.get(userId)?.name)
+          .filter((name) => typeof name === 'string' && name.trim() !== '')
+      : [];
+    const responsible = participantNames[0] ?? deriveResponsible(relatedCase, users);
+
+    deadlineRecords.push(
+      toDeadlineRecord({
+        id: appointment.id,
+        title: appointment.description ?? appointment.type ?? 'Termin',
+        caseNumber,
+        client: clientName,
+        dueDateValue: appointment.dateTime,
+        responsible,
+        type: appointment.type ?? 'Termin',
+        location: appointment.location,
+        tags: participantNames,
+      })
+    );
+  });
+
+  return deadlineRecords;
 }
 
 function describeRelativeDeadline(deadline) {
@@ -516,12 +629,39 @@ function populateOwnerFilter() {
     )
   ).sort((a, b) => a.localeCompare(b, 'de'));
 
+  const currentValue = ownerFilter.value || 'all';
+  const defaultOption = ownerFilter.querySelector('option[value="all"]');
+  ownerFilter.innerHTML = '';
+  if (defaultOption) {
+    ownerFilter.appendChild(defaultOption);
+  } else {
+    const fallbackOption = document.createElement('option');
+    fallbackOption.value = 'all';
+    fallbackOption.textContent = 'Alle Verantwortlichen';
+    ownerFilter.appendChild(fallbackOption);
+  }
+
   owners.forEach((owner) => {
     const option = document.createElement('option');
     option.value = owner;
     option.textContent = owner;
     ownerFilter.appendChild(option);
   });
+
+  if (owners.includes(currentValue)) {
+    ownerFilter.value = currentValue;
+    filters.owner = currentValue;
+  } else {
+    ownerFilter.value = 'all';
+    filters.owner = 'all';
+  }
+}
+
+function refreshDeadlinesFromStore() {
+  deadlines = buildDeadlineEntriesFromStore();
+  populateOwnerFilter();
+  applyFilters();
+  updateTimestamp();
 }
 
 function applyFilters() {
@@ -575,50 +715,16 @@ function initDeadlineBoard() {
     return;
   }
 
-  populateOwnerFilter();
   initialiseFilters();
-  updateTimestamp();
-  applyFilters();
+  refreshDeadlinesFromStore();
 }
 
-if (Array.isArray(deadlines) && deadlines.length > 0) {
-  initDeadlineBoard();
-} else {
-  updateTimestamp();
-  updateSummary([], 0);
-  updateEmptyState([]);
-  if (columnsContainer) {
-    columnsContainer.innerHTML = '';
-    statusConfigurations.forEach((status) => {
-      const column = document.createElement('section');
-      column.className = `deadline-column deadline-column--${status.id}`;
-      column.setAttribute('role', 'listitem');
+initDeadlineBoard();
 
-      const columnHeader = document.createElement('header');
-      columnHeader.className = 'deadline-column__header';
-
-      const title = document.createElement('h3');
-      title.className = 'deadline-column__title';
-      title.textContent = status.label;
-
-      const count = document.createElement('span');
-      count.className = 'deadline-column__count';
-      count.textContent = '0';
-
-      columnHeader.append(title, count);
-      column.appendChild(columnHeader);
-
-      const description = document.createElement('p');
-      description.className = 'deadline-column__description';
-      description.textContent = status.description;
-      column.appendChild(description);
-
-      const empty = document.createElement('p');
-      empty.className = 'deadline-column__empty';
-      empty.textContent = status.emptyText;
-      column.appendChild(empty);
-
-      columnsContainer.appendChild(column);
-    });
+verilexStore?.on?.('storeReady', refreshDeadlinesFromStore);
+verilexStore?.on?.('storeReset', refreshDeadlinesFromStore);
+verilexStore?.on?.('storeChanged', (event) => {
+  if (!event?.entity || ['Case', 'ComplianceItem', 'Appointment', 'Client', 'User'].includes(event.entity)) {
+    refreshDeadlinesFromStore();
   }
-}
+});

@@ -1,6 +1,5 @@
 import { overlayInstance } from './app.js';
-
-const STORAGE_KEY = 'verilex:time-entries';
+import { verilexStore } from './store.js';
 
 const searchInput = document.getElementById('performance-search');
 const clientSelect = document.getElementById('performance-client-filter');
@@ -15,56 +14,52 @@ const breakdownSummary = document.getElementById('performance-breakdown-summary'
 const exportButton = document.getElementById('performance-export-button');
 
 let rawEntries = [];
-let caseMetadata = [];
+let caseMetadata = { byId: new Map(), byNumber: new Map(), list: [] };
 let lastFilteredEntries = [];
 
-function parseCaseData() {
-  const dataElement = document.getElementById('performance-case-data');
-  if (!dataElement) {
-    return [];
-  }
+function buildCaseMetadata() {
+  const clients = new Map((verilexStore?.getAll('Client') ?? []).map((client) => [client.id, client]));
 
-  try {
-    const rawText = dataElement.textContent ?? '[]';
-    const parsed = JSON.parse(rawText);
-    if (!Array.isArray(parsed)) {
-      return [];
+  const cases = verilexStore?.getAll('Case') ?? [];
+  const meta = {
+    byId: new Map(),
+    byNumber: new Map(),
+    list: [],
+  };
+
+  cases.forEach((caseEntry) => {
+    const caseNumber = String(caseEntry.caseNumber ?? '').trim();
+    const title = String(caseEntry.title ?? '').trim();
+    const clientName = clients.get(caseEntry.clientId)?.name ?? 'Unbekannter Mandant';
+    const record = {
+      caseId: caseEntry.id ?? '',
+      caseNumber,
+      title,
+      client: clientName || 'Unbekannter Mandant',
+    };
+    meta.byId.set(record.caseId, record);
+    if (record.caseNumber) {
+      meta.byNumber.set(record.caseNumber, record);
     }
+    meta.list.push(record);
+  });
 
-    return parsed.map((entry) => ({
-      caseNumber: String(entry.caseNumber ?? '').trim(),
-      title: String(entry.title ?? '').trim(),
-      client: String(entry.client ?? 'Unbekannter Mandant').trim() || 'Unbekannter Mandant',
-    }));
-  } catch (error) {
-    console.error('Die Mandantendaten konnten nicht geladen werden.', error);
-    overlayInstance?.show?.({
-      title: 'Fehler beim Laden der Mandanten',
-      message: 'Die Zuordnung der Mandanten konnte nicht initialisiert werden.',
-      details: error,
-    });
-    return [];
-  }
+  return meta;
 }
 
-function loadEntries() {
+function syncEntriesFromStore() {
   try {
-    const storedValue = window.localStorage.getItem(STORAGE_KEY);
-    if (!storedValue) {
-      rawEntries = [];
-      return;
-    }
-
-    const parsed = JSON.parse(storedValue);
-    rawEntries = Array.isArray(parsed) ? parsed : [];
+    caseMetadata = buildCaseMetadata();
+    rawEntries = verilexStore?.getAll('TimeEntry') ?? [];
   } catch (error) {
-    console.error('Zeiteinträge konnten nicht geladen werden.', error);
+    console.error('Zeiteinträge konnten nicht aus dem Store geladen werden.', error);
     overlayInstance?.show?.({
       title: 'Fehler beim Lesen der Leistungsdaten',
-      message: 'Die gespeicherten Einträge konnten nicht aus dem Speicher geladen werden.',
+      message: 'Die gespeicherten Einträge konnten nicht aus dem zentralen Store geladen werden.',
       details: error,
     });
     rawEntries = [];
+    caseMetadata = { byId: new Map(), byNumber: new Map(), list: [] };
   }
 }
 
@@ -75,11 +70,15 @@ function normalizeEntry(entry) {
 
   const startedAt = entry.startedAt ? new Date(entry.startedAt) : null;
   const endedAt = entry.endedAt ? new Date(entry.endedAt) : null;
-  const caseNumber = typeof entry.caseNumber === 'string' ? entry.caseNumber : '';
-  const caseTitle = typeof entry.caseTitle === 'string' ? entry.caseTitle : '';
-  const caseInfo = caseMetadata.find((item) => item.caseNumber === caseNumber);
+  const caseId = typeof entry.caseId === 'string' ? entry.caseId : '';
+  const caseInfoFromId = caseMetadata.byId.get(caseId) ?? null;
+  const normalizedCaseNumber =
+    caseInfoFromId?.caseNumber ?? (typeof entry.caseNumber === 'string' ? entry.caseNumber.trim() : '');
+  const caseInfo = caseInfoFromId ?? (normalizedCaseNumber ? caseMetadata.byNumber.get(normalizedCaseNumber) : null);
+  const caseNumber = caseInfo?.caseNumber ?? normalizedCaseNumber;
+  const caseTitle = caseInfo?.title ?? (typeof entry.caseTitle === 'string' ? entry.caseTitle : '');
   const clientName = caseInfo?.client ?? (caseTitle || 'Allgemeine Leistung');
-  const durationMs = Number(entry.durationMs) || 0;
+  const durationMs = Number(entry.durationMs ?? 0) || (Number(entry.durationMinutes ?? 0) * 60000 || 0);
 
   return {
     id: entry.id ?? crypto.randomUUID?.() ?? `entry-${Date.now()}`,
@@ -475,8 +474,7 @@ function init() {
     return;
   }
 
-  caseMetadata = parseCaseData();
-  loadEntries();
+  syncEntriesFromStore();
   render();
 
   searchInput.addEventListener('input', () => {
@@ -491,15 +489,24 @@ function init() {
     render();
   });
 
-  window.addEventListener('storage', (event) => {
-    if (event.key && event.key !== STORAGE_KEY) {
-      return;
-    }
-    loadEntries();
+  exportButton?.addEventListener('click', handleExportClick);
+
+  verilexStore?.on?.('storeReady', () => {
+    syncEntriesFromStore();
     render();
   });
 
-  exportButton?.addEventListener('click', handleExportClick);
+  verilexStore?.on?.('storeReset', () => {
+    syncEntriesFromStore();
+    render();
+  });
+
+  verilexStore?.on?.('storeChanged', (event) => {
+    if (!event?.entity || ['TimeEntry', 'Case', 'Client'].includes(event.entity)) {
+      syncEntriesFromStore();
+      render();
+    }
+  });
 }
 
 init();
