@@ -1,142 +1,16 @@
+import { verilexStore } from './store.js';
+
 const STORAGE_KEY = 'verilex:compliance:completed';
 
-const COMPLIANCE_ITEMS = [
-  {
-    id: 'kyc-intake',
-    title: 'KYC-Unterlagen vollständig dokumentiert',
-    area: 'Mandatsannahme',
-    owner: 'Assistenz',
-    frequency: 'case',
-    risk: 'hoch',
-    description:
-      'Identitätsnachweise, wirtschaftliche Eigentümer und Risikobewertung müssen vor Mandatsannahme vollständig abgelegt sein.',
-    guidance:
-      'Checkliste im DMS aktualisieren und Uploads auf Vollständigkeit prüfen. Bei Unklarheiten Rücksprache mit dem Partnerteam.',
-    tags: ['KYC', 'Geldwäsche', 'Mandat'],
-    nextReview: '2025-11-12',
-    references: ['RAO §8a', 'WiEReG'],
-  },
-  {
-    id: 'conflict-check',
-    title: 'Interessenskonflikt-Dokumentation',
-    area: 'Mandatsannahme',
-    owner: 'Partnerteam',
-    frequency: 'case',
-    risk: 'hoch',
-    description:
-      'Konfliktprüfung anhand der bestehenden Akten durchführen und Dokumentation im Mandatsblatt hinterlegen.',
-    guidance:
-      'Mandantenstamm durchsuchen, Ergebnis protokollieren und etwaige Rückfragen im Team besprechen.',
-    tags: ['Konflikt', 'Berufspflichten'],
-    nextReview: '2025-11-10',
-    references: ['§ 9 RL-BA'],
-  },
-  {
-    id: 'data-processing',
-    title: 'Verzeichnis der Verarbeitungstätigkeiten aktualisiert',
-    area: 'Datenschutz',
-    owner: 'Kanzleimanagement',
-    frequency: 'quarterly',
-    risk: 'mittel',
-    description:
-      'Neue Tools oder Prozesse müssen in das Verzeichnis aufgenommen werden. Prüfen, ob alle Mandatsapps korrekt beschrieben sind.',
-    guidance:
-      'Abgleich mit den eingesetzten SaaS-Diensten und ggf. Ergänzung der TOMs durchführen.',
-    tags: ['DSGVO', 'Verarbeitung'],
-    nextReview: '2025-11-24',
-    references: ['Art. 30 DSGVO'],
-  },
-  {
-    id: 'deadline-control',
-    title: 'Vier-Augen-Kontrolle Fristenkalender',
-    area: 'Fristenmanagement',
-    owner: 'Assistenz',
-    frequency: 'monthly',
-    risk: 'hoch',
-    description:
-      'Vergleich zwischen elektronischem Kalender und physischen Fristlisten, insbesondere für Gerichtstermine.',
-    guidance:
-      'Stichprobe von zehn Verfahren wählen, Termine mit Gerichtskorrespondenz abgleichen und Abweichungen dokumentieren.',
-    tags: ['Frist', 'QS'],
-    nextReview: '2025-11-08',
-    references: ['§ 9 RAO'],
-  },
-  {
-    id: 'document-retention',
-    title: 'Aufbewahrungs- und Löschkonzept geprüft',
-    area: 'Datenschutz',
-    owner: 'Kanzleimanagement',
-    frequency: 'semiannual',
-    risk: 'mittel',
-    description:
-      'Überprüfung, ob die Löschfristen aus dem Kanzleihandbuch eingehalten werden und automatisierte Jobs laufen.',
-    guidance:
-      'Systemberichte abrufen, Stichprobe aus Mandatsakten ziehen und Protokoll signieren lassen.',
-    tags: ['DSGVO', 'Archiv'],
-    nextReview: '2025-12-15',
-    references: ['Art. 5 Abs. 1 lit. e DSGVO'],
-  },
-  {
-    id: 'invoice-approval',
-    title: 'Rechnungsfreigabe dokumentiert',
-    area: 'Finanzen',
-    owner: 'Partnerteam',
-    frequency: 'monthly',
-    risk: 'mittel',
-    description:
-      'Vor Versand jeder Rechnung ist die Freigabe des verantwortlichen Partners schriftlich festzuhalten.',
-    guidance:
-      'Freigabemail oder Signatur im DMS hinterlegen, offene Freigaben in der Finanzübersicht markieren.',
-    tags: ['Finanzen', 'Rechnung'],
-    nextReview: '2025-11-18',
-    references: ['Kanzleihandbuch Abschnitt 4'],
-  },
-  {
-    id: 'security-training',
-    title: 'Security-Awareness-Training dokumentiert',
-    area: 'IT-Sicherheit',
-    owner: 'Kanzleimanagement',
-    frequency: 'semiannual',
-    risk: 'niedrig',
-    description:
-      'Alle Mitarbeiter:innen absolvieren das verpflichtende Phishing-Training. Teilnahmebestätigungen müssen abgelegt sein.',
-    guidance:
-      'Liste der Mitarbeitenden aus dem HR-System exportieren und gegen das Trainingsportal abgleichen.',
-    tags: ['Security', 'Training'],
-    nextReview: '2026-01-05',
-    references: ['ISO 27001 A.7.2'],
-  },
-  {
-    id: 'document-sealing',
-    title: 'Digitale Siegel für Schriftsätze getestet',
-    area: 'Technologie',
-    owner: 'Assistenz',
-    frequency: 'quarterly',
-    risk: 'mittel',
-    description:
-      'Regelmäßiger Funktionstest der qualifizierten Signaturkarten inkl. Ablaufkontrolle.',
-    guidance:
-      'Testschriftsatz an das interne Postfach signieren, Protokoll sichern und Ablaufdaten der Karten prüfen.',
-    tags: ['Signatur', 'ERV'],
-    nextReview: '2025-11-14',
-    references: ['ERV-Richtlinien'],
-  },
-  {
-    id: 'client-portal-audit',
-    title: 'Mandantenportal-Rechte überprüft',
-    area: 'IT-Sicherheit',
-    owner: 'Assistenz',
-    frequency: 'monthly',
-    risk: 'hoch',
-    description:
-      'Sicherstellen, dass entlassene Mandanten keinen Zugriff mehr auf vertrauliche Dokumente besitzen.',
-    guidance:
-      'Zugriffsprotokolle durchsehen, Deaktivierungen testen und Ergebnis im Audit-Log speichern.',
-    tags: ['Portal', 'Rechte'],
-    nextReview: '2025-11-11',
-    references: ['DSGVO Art. 32'],
-  },
-];
+let complianceItems = [];
+let completedSet = new Set();
+
+function resolveStore() {
+  if (typeof window !== 'undefined' && window.verilexStore) {
+    return window.verilexStore;
+  }
+  return verilexStore;
+}
 
 function normalizeString(value) {
   return value
@@ -157,7 +31,10 @@ function loadCompletedSet() {
     if (!Array.isArray(parsed)) {
       return new Set();
     }
-    const knownIds = new Set(COMPLIANCE_ITEMS.map((item) => item.id));
+    const knownIds = new Set(complianceItems.map((item) => item.id));
+    if (knownIds.size === 0) {
+      return new Set(parsed);
+    }
     return new Set(parsed.filter((id) => knownIds.has(id)));
   } catch (error) {
     console.warn('Fortschritt konnte nicht gelesen werden.', error);
@@ -198,6 +75,56 @@ function differenceInDays(targetDate, baseDate = new Date()) {
   return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
+function toLookupMap(items, key = 'id') {
+  return (items || []).reduce((acc, item) => {
+    if (item && item[key]) {
+      acc[item[key]] = item;
+    }
+    return acc;
+  }, {});
+}
+
+function deriveAreaFromCase(caseRecord) {
+  if (!caseRecord) {
+    return 'Allgemein';
+  }
+  return caseRecord.category || caseRecord.title || 'Allgemein';
+}
+
+function mapComplianceItemsFromStore() {
+  const store = resolveStore();
+  if (!store) {
+    return [];
+  }
+
+  const casesById = toLookupMap(store.getAll('Case'));
+  const usersById = toLookupMap(store.getAll('User'));
+
+  return store.getAll('ComplianceItem').map((item) => {
+    const relatedCase = casesById[item.caseId];
+    const owner = item.ownerId ? usersById[item.ownerId]?.name : null;
+
+    return {
+      id: item.id,
+      title: item.title,
+      area: item.area || deriveAreaFromCase(relatedCase),
+      owner: owner || 'Unzugewiesen',
+      frequency: item.frequency || 'case',
+      risk: item.risk || 'mittel',
+      description: item.notes || 'Keine Beschreibung hinterlegt.',
+      guidance: item.guidance || 'Bitte weitere Details im Fallverlauf dokumentieren.',
+      tags: item.tags || (relatedCase ? [relatedCase.caseNumber] : []),
+      references: item.references || [],
+      nextReview: item.deadline,
+      caseNumber: relatedCase?.caseNumber,
+    };
+  });
+}
+
+function findComplianceItemById(id) {
+  return complianceItems.find((item) => item.id === id) || null;
+}
+
 function describeDueState(dateString) {
   const parsed = new Date(dateString);
   if (Number.isNaN(parsed.getTime())) {
@@ -231,6 +158,33 @@ const state = {
   activeDetailId: null,
 };
 
+function syncCompletedSet() {
+  completedSet = loadCompletedSet();
+  const knownIds = new Set(complianceItems.map((item) => item.id));
+  if (knownIds.size === 0) {
+    return;
+  }
+  completedSet = new Set(Array.from(completedSet).filter((id) => knownIds.has(id)));
+  persistCompletedSet(completedSet);
+}
+
+function refreshComplianceDataFromStore() {
+  complianceItems = mapComplianceItemsFromStore();
+  syncCompletedSet();
+  hydrateFilterOptions();
+  updateView();
+
+  const activeItem = state.activeDetailId ? findComplianceItemById(state.activeDetailId) : null;
+  if (activeItem) {
+    renderDetail(activeItem);
+  } else {
+    state.activeDetailId = null;
+    renderDetail(null);
+  }
+
+  updateLastSyncTimestamp();
+}
+
 const elements = {
   totalValue: document.getElementById('compliance-total-value'),
   criticalValue: document.getElementById('compliance-critical-value'),
@@ -253,11 +207,17 @@ const elements = {
   exportButton: document.getElementById('compliance-export'),
 };
 
-let completedSet = loadCompletedSet();
-
 function hydrateFilterOptions() {
-  const areas = uniqueSorted(COMPLIANCE_ITEMS.map((item) => item.area));
-  const owners = uniqueSorted(COMPLIANCE_ITEMS.map((item) => item.owner));
+  const defaultAreaOption = elements.areaFilter.querySelector('option[value=""]');
+  const defaultOwnerOption = elements.ownerFilter.querySelector('option[value=""]');
+
+  elements.areaFilter.innerHTML = '';
+  elements.ownerFilter.innerHTML = '';
+  if (defaultAreaOption) elements.areaFilter.append(defaultAreaOption.cloneNode(true));
+  if (defaultOwnerOption) elements.ownerFilter.append(defaultOwnerOption.cloneNode(true));
+
+  const areas = uniqueSorted(complianceItems.map((item) => item.area).filter(Boolean));
+  const owners = uniqueSorted(complianceItems.map((item) => item.owner).filter(Boolean));
 
   areas.forEach((area) => {
     const option = document.createElement('option');
@@ -274,7 +234,7 @@ function hydrateFilterOptions() {
   });
 }
 
-function applyFilters(items) {
+function applyFilters(items = complianceItems) {
   return items.filter((item) => {
     if (state.area && item.area !== state.area) {
       return false;
@@ -325,13 +285,11 @@ function renderSummary(filteredItems) {
   elements.upcomingValue.textContent = upcoming.toString();
 
   const completionRatio =
-    COMPLIANCE_ITEMS.length === 0
-      ? 0
-      : Math.round((completedSet.size / COMPLIANCE_ITEMS.length) * 100);
+    complianceItems.length === 0 ? 0 : Math.round((completedSet.size / complianceItems.length) * 100);
   elements.progressValue.textContent = `${completionRatio}%`;
   elements.progressBar.style.width = `${completionRatio}%`;
 
-  const outstanding = COMPLIANCE_ITEMS.length - completedSet.size;
+  const outstanding = complianceItems.length - completedSet.size;
   const outstandingLabel = outstanding === 1 ? 'Prüfpunkt' : 'Prüfpunkte';
   elements.progressSummary.textContent =
     outstanding === 0
@@ -373,6 +331,10 @@ function renderDetail(item) {
         <div>
           <dt>Verantwortlich</dt>
           <dd>${item.owner}</dd>
+        </div>
+        <div>
+          <dt>Aktenzeichen</dt>
+          <dd>${item.caseNumber || 'ohne Zuordnung'}</dd>
         </div>
         <div>
           <dt>Rhythmus</dt>
@@ -463,7 +425,7 @@ function createComplianceItemNode(item) {
     }
     persistCompletedSet(completedSet);
     updateView();
-    renderDetail(state.activeDetailId === item.id ? item : COMPLIANCE_ITEMS.find((entry) => entry.id === state.activeDetailId));
+    renderDetail(state.activeDetailId === item.id ? item : findComplianceItemById(state.activeDetailId));
   });
 
   const label = document.createElement('label');
@@ -605,7 +567,7 @@ function renderUpcoming(filteredItems) {
 }
 
 function updateView() {
-  const filtered = applyFilters(COMPLIANCE_ITEMS);
+  const filtered = applyFilters(complianceItems);
 
   renderSummary(filtered);
   renderList(filtered);
@@ -674,7 +636,7 @@ function bindEvents() {
   });
 
   elements.exportButton.addEventListener('click', () => {
-    const filtered = applyFilters(COMPLIANCE_ITEMS);
+    const filtered = applyFilters(complianceItems);
     const outstanding = filtered.filter((item) => !completedSet.has(item.id));
     const lines = [
       'VeriLex – Maßnahmenliste',
@@ -715,11 +677,16 @@ function init() {
     return;
   }
 
-  hydrateFilterOptions();
   bindEvents();
-  updateView();
-  renderDetail(null);
-  updateLastSyncTimestamp();
+
+  refreshComplianceDataFromStore();
+
+  const store = resolveStore();
+  if (store) {
+    store.on('storeReady', refreshComplianceDataFromStore);
+    store.on('storeReset', refreshComplianceDataFromStore);
+    store.on('storeChanged', refreshComplianceDataFromStore);
+  }
 }
 
 init();
