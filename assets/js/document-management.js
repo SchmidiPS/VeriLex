@@ -1,5 +1,6 @@
 import { overlayInstance } from './app.js';
 import { getRoleDefinition, readStoredRole } from './auth-utils.js';
+import { verilexStore } from './store.js';
 
 const DEFAULT_PERMISSIONS = Object.freeze({
   view: ['partner', 'associate', 'assistant'],
@@ -23,7 +24,8 @@ const viewerMeta = document.getElementById('document-viewer-meta');
 const viewerTitle = document.getElementById('document-viewer-title');
 
 let documents = [];
-let seedDocuments = [];
+let userLookup = {};
+const runtimePreviews = new Map();
 let lastFocusedElement = null;
 let viewerVisible = false;
 let previousBodyOverflow = '';
@@ -177,28 +179,61 @@ function createDocumentId() {
   return `doc-${Math.random().toString(16).slice(2, 10)}-${Date.now()}`;
 }
 
-function parseSeedData() {
-  const dataEl = document.getElementById('document-seed-data');
-  if (!dataEl) {
-    return [];
+function refreshUserLookup() {
+  userLookup = verilexStore
+    .getAll('User')
+    .reduce((acc, user) => ({ ...acc, [user.id]: user }), {});
+}
+
+function getUserNameById(userId) {
+  const user = userLookup[userId];
+  if (user?.name) {
+    return user.name;
   }
 
-  try {
-    const raw = dataEl.textContent ?? '[]';
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      return parsed.map((entry) => normalizeDocument(entry));
-    }
-  } catch (error) {
-    console.error('Seed-Dokumente konnten nicht geladen werden.', error);
-    overlayInstance?.show?.({
-      title: 'Daten konnten nicht geladen werden',
-      message: 'Die initialen Dokumente stehen derzeit nicht zur Verfügung.',
-      details: error,
-    });
+  if (user?.email) {
+    return user.email;
   }
 
-  return [];
+  return null;
+}
+
+function resolveDefaultCaseId() {
+  const cases = verilexStore.getAll('Case');
+  return cases[0]?.id ?? null;
+}
+
+function resolveUserIdForRole(roleId) {
+  const normalized = normalizeRoleId(roleId);
+  const fallbackUser = verilexStore.getAll('User')[0];
+  const match = verilexStore
+    .getAll('User')
+    .find((user) => (user.role ?? '').toString().toLowerCase() === normalized);
+  return match?.id ?? fallbackUser?.id ?? null;
+}
+
+function mapDocumentFromStore(entry) {
+  const normalized = normalizeDocument(entry);
+  const name = normalized.name ?? normalized.title ?? 'Unbenanntes Dokument';
+  const uploadedAt = normalized.uploadedAt ?? normalized.createdAt ?? new Date().toISOString();
+  const uploadedBy =
+    normalized.uploadedBy ?? getUserNameById(normalized.createdBy) ?? 'Unbekannte Person';
+  const previewUrl = runtimePreviews.get(normalized.id) ?? normalized.previewUrl;
+
+  return {
+    ...normalized,
+    name,
+    uploadedAt,
+    uploadedBy,
+    previewUrl,
+    mimeType: normalized.mimeType ?? 'application/octet-stream',
+  };
+}
+
+function syncDocumentsFromStore() {
+  refreshUserLookup();
+  documents = verilexStore.getAll('Document').map((entry) => mapDocumentFromStore(entry));
+  renderDocumentList();
 }
 
 function formatFileSize(bytes) {
@@ -245,13 +280,16 @@ function isPdfDocument(doc) {
 }
 
 function cleanupDocumentResources(doc) {
-  if (doc?.inlineUrl) {
+  const previewUrl = runtimePreviews.get(doc?.id);
+  if (previewUrl && previewUrl.startsWith('blob:')) {
     try {
-      URL.revokeObjectURL(doc.inlineUrl);
+      URL.revokeObjectURL(previewUrl);
     } catch (error) {
       console.warn('Konnte temporäre URL nicht freigeben.', error);
     }
-    delete doc.inlineUrl;
+  }
+  if (doc?.id) {
+    runtimePreviews.delete(doc.id);
   }
 }
 
@@ -359,23 +397,12 @@ function openDocumentViewer(documentId) {
   }
 
   let resourceUrl = null;
+  const runtimeUrl = runtimePreviews.get(doc.id) ?? null;
 
   if (doc.viewerUrl) {
     resourceUrl = doc.viewerUrl;
-  } else if (doc.inlineUrl) {
-    resourceUrl = doc.inlineUrl;
-  } else if (doc.file instanceof File && isPdfDocument(doc)) {
-    try {
-      doc.inlineUrl = URL.createObjectURL(doc.file);
-      resourceUrl = doc.inlineUrl;
-    } catch (error) {
-      console.error('PDF-Vorschau konnte nicht vorbereitet werden.', error);
-      overlayInstance?.show?.({
-        title: 'Vorschau nicht möglich',
-        message: `Für ${doc.name ?? 'dieses Dokument'} konnte keine Vorschau erzeugt werden.`,
-        details: error,
-      });
-    }
+  } else if (runtimeUrl) {
+    resourceUrl = runtimeUrl;
   }
 
   if (isPdfDocument(doc) && resourceUrl) {
@@ -634,9 +661,17 @@ function removeDocument(id) {
     closeDocumentViewer();
   }
 
-  documents = documents.filter((doc) => doc.id !== id);
-  renderDocumentList();
-  updateProcessingInfo('Dokument wurde entfernt.');
+  try {
+    verilexStore.removeEntity('Document', id);
+    updateProcessingInfo('Dokument wurde entfernt.');
+  } catch (error) {
+    console.error('Dokument konnte nicht entfernt werden.', error);
+    overlayInstance?.show?.({
+      title: 'Löschen nicht möglich',
+      message: 'Das Dokument konnte nicht entfernt werden. Bitte erneut versuchen.',
+      details: error,
+    });
+  }
 }
 
 function resetDocuments() {
@@ -645,39 +680,66 @@ function resetDocuments() {
     closeDocumentViewer();
   }
 
-  documents = seedDocuments.map((doc) => cloneDocument(doc));
-  renderDocumentList();
-  updateProcessingInfo('Liste wurde auf den Demo-Ausgangszustand zurückgesetzt.');
+  try {
+    const sample = window.cloneVerilexSampleData?.();
+    const sampleDocs = Array.isArray(sample?.documents) ? sample.documents : [];
+    verilexStore
+      .getAll('Document')
+      .forEach((doc) => {
+        cleanupDocumentResources(doc);
+        verilexStore.removeEntity('Document', doc.id);
+      });
+    sampleDocs.forEach((doc) => verilexStore.addEntity('Document', doc));
+    runtimePreviews.clear();
+    updateProcessingInfo('Liste wurde auf den Demo-Ausgangszustand zurückgesetzt.');
+  } catch (error) {
+    console.error('Dokumenten-Reset fehlgeschlagen.', error);
+    overlayInstance?.show?.({
+      title: 'Zurücksetzen nicht möglich',
+      message: 'Die Dokumentenliste konnte nicht zurückgesetzt werden.',
+      details: error,
+    });
+  }
 }
 
-function createDocumentFromFile(file) {
-  const doc = {
+function createDocumentPayloadFromFile(file) {
+  const now = new Date().toISOString();
+  const activeRole = getActiveRoleId();
+  const userId = resolveUserIdForRole(activeRole);
+  const basePermissions = createDefaultPermissions();
+
+  return normalizeDocument({
     id: createDocumentId(),
+    caseId: resolveDefaultCaseId(),
     name: file.name ?? 'Unbenannt',
+    title: file.name ?? 'Unbenannt',
     mimeType: file.type ?? 'application/octet-stream',
     size: file.size ?? 0,
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: 'Sie (Demo)',
+    uploadedAt: now,
+    createdAt: now,
+    createdBy: userId,
+    uploadedBy: getUserNameById(userId) ?? 'Sie (Demo)',
     status: 'Upload abgeschlossen (Mock)',
     tags: [],
     notes: 'Lokale Datei – keine Übertragung erfolgt.',
-    permissions: createDefaultPermissions(),
-    file,
-  };
+    permissions: basePermissions,
+  });
+}
+
+function readPreviewForFile(file, doc) {
+  if (!(file instanceof File)) {
+    return Promise.resolve(null);
+  }
 
   if (isPdfDocument(doc)) {
     try {
-      doc.inlineUrl = URL.createObjectURL(file);
+      return Promise.resolve(URL.createObjectURL(file));
     } catch (error) {
-      console.warn('PDF-Datei konnte nicht für die Vorschau vorbereitet werden.', error);
+      return Promise.reject(error);
     }
   }
 
-  return normalizeDocument(doc);
-}
-
-function readPreviewForFile(doc) {
-  if (!doc.file || !doc.mimeType?.startsWith('image/')) {
+  if (!file.type?.startsWith('image/')) {
     return Promise.resolve(null);
   }
 
@@ -685,7 +747,7 @@ function readPreviewForFile(doc) {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(doc.file);
+    reader.readAsDataURL(file);
   });
 }
 
@@ -697,37 +759,28 @@ async function processFiles(fileList) {
   }
 
   updateProcessingInfo(`${files.length} Datei(en) werden verarbeitet …`);
+  refreshUserLookup();
 
   for (const file of files) {
-    const doc = createDocumentFromFile(file);
-    documents.unshift(doc);
-    renderDocumentList();
+    const payload = createDocumentPayloadFromFile(file);
 
     try {
-      const previewUrl = await readPreviewForFile(doc);
-      const target = documents.find((entry) => entry.id === doc.id);
-
-      if (target) {
-        if (previewUrl) {
-          target.previewUrl = previewUrl;
-        }
-        if (target.file) {
-          delete target.file;
-        }
-        if (previewUrl) {
-          renderDocumentList();
-        }
+      const saved = verilexStore.addEntity('Document', payload);
+      const previewUrl = await readPreviewForFile(file, saved);
+      if (previewUrl) {
+        runtimePreviews.set(saved.id, previewUrl);
       }
     } catch (error) {
-      console.error('Vorschau konnte nicht erzeugt werden.', error);
+      console.error('Upload konnte nicht verarbeitet werden.', error);
       overlayInstance?.show?.({
-        title: 'Vorschau nicht möglich',
-        message: `Für ${doc.name} konnte keine Vorschau erzeugt werden.`,
+        title: 'Upload fehlgeschlagen',
+        message: `Die Datei ${file.name ?? 'ohne Namen'} konnte nicht verarbeitet werden.`,
         details: error,
       });
     }
   }
 
+  syncDocumentsFromStore();
   updateProcessingInfo('Upload abgeschlossen. Die Liste wurde aktualisiert.');
 }
 
@@ -805,13 +858,27 @@ function attachEventListeners() {
 }
 
 function init() {
-  seedDocuments = parseSeedData();
-  documents = seedDocuments.map((doc) => cloneDocument(doc));
-  renderDocumentList();
-  updateProcessingInfo('Bereit für neue Uploads.');
+  updateProcessingInfo('Dokumente werden geladen …');
   registerViewerEvents();
   attachEventListeners();
-  window.addEventListener('verilex:role-changed', handleRoleChanged);
+  window.addEventListener('verilex:role-changed', () => {
+    handleRoleChanged();
+    syncDocumentsFromStore();
+  });
+
+  const refreshHandler = () => {
+    syncDocumentsFromStore();
+    updateProcessingInfo('Bereit für neue Uploads.');
+  };
+
+  verilexStore.on('storeReady', refreshHandler);
+  verilexStore.on('storeReset', () => {
+    runtimePreviews.clear();
+    refreshHandler();
+  });
+  verilexStore.on('storeChanged', refreshHandler);
+
+  refreshHandler();
 }
 
 init();
