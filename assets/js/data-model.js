@@ -362,7 +362,11 @@
         type: "Schriftsatz",
         status: "entwurf",
         createdAt: "2025-11-10T09:00:00Z",
+        uploadedAt: "2025-11-10T09:00:00Z",
         createdBy: "u-associate",
+        uploadedBy: "Lukas Stern",
+        mimeType: "application/pdf",
+        size: 512000,
         tags: ["Entwurf", "Verhandlung"]
       },
       {
@@ -372,8 +376,70 @@
         type: "Beweis",
         status: "final",
         createdAt: "2025-11-12T14:00:00Z",
+        uploadedAt: "2025-11-12T14:00:00Z",
         createdBy: "u-partner",
+        uploadedBy: "Dr. Jana Keller",
+        mimeType: "application/pdf",
+        size: 245760,
         tags: ["Gutachten"]
+      },
+      {
+        id: "doc-03",
+        caseId: "ca-2045",
+        title: "Klageentwurf.pdf",
+        type: "Schriftsatz",
+        status: "Entwurf – finale Prüfung läuft",
+        createdAt: "2025-10-29T08:30:00Z",
+        uploadedAt: "2025-10-29T08:30:00Z",
+        createdBy: "u-partner",
+        uploadedBy: "RAin Dr. Hannah Keller",
+        mimeType: "application/pdf",
+        size: 584312,
+        tags: ["Klage", "Entwurf"],
+        notes: "Vor Versand an Mandantin prüfen.",
+        viewerUrl: "assets/mock/verilex-demo.pdf",
+        permissions: {
+          view: ["partner", "associate"],
+          manage: ["partner"]
+        }
+      },
+      {
+        id: "doc-04",
+        caseId: "ca-2046",
+        title: "Beweisfoto_A1.jpg",
+        type: "Beweis",
+        status: "Freigegeben",
+        createdAt: "2025-10-20T14:12:00Z",
+        uploadedAt: "2025-10-20T14:12:00Z",
+        createdBy: "u-associate",
+        uploadedBy: "Syndikus RA Tim Berger",
+        mimeType: "image/jpeg",
+        size: 341233,
+        tags: ["Beweis", "Bild"],
+        notes: "Referenz für Abschnitt 4 des Schriftsatzes.",
+        permissions: {
+          view: ["partner", "associate", "assistant"],
+          manage: ["partner", "associate"]
+        }
+      },
+      {
+        id: "doc-05",
+        caseId: "ca-2046",
+        title: "Vergleichsentwurf.docx",
+        type: "Vertrag",
+        status: "Feedback des Mandanten erforderlich",
+        createdAt: "2025-10-05T09:04:00Z",
+        uploadedAt: "2025-10-05T09:04:00Z",
+        createdBy: "u-partner",
+        uploadedBy: "RAin Dr. Hannah Keller",
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        size: 214560,
+        tags: ["Vergleich", "ToDo"],
+        notes: "Mandantenfeedback bis Ende KW45 einarbeiten.",
+        permissions: {
+          view: ["partner"],
+          manage: ["partner"]
+        }
       }
     ],
     timeEntries: [
