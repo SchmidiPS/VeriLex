@@ -1,4 +1,5 @@
 import { overlayInstance } from './app.js';
+import { verilexStore } from './store.js';
 
 const typingIndicatorEl = document.getElementById('assistant-typing');
 const emptyStateEl = document.getElementById('assistant-empty-state');
@@ -23,6 +24,64 @@ let defaultResponseIndex = 0;
 const baseSuggestions = parseJsonArray('assistant-suggestions');
 const assistantKnowledge = parseKnowledge('assistant-knowledge');
 const briefingData = parseJsonObject('assistant-briefing-data');
+
+function buildStoreSuggestions() {
+  if (!verilexStore) {
+    return [];
+  }
+
+  const cases = verilexStore.getAll('Case');
+  const invoices = verilexStore.getAll('Invoice');
+  const complianceItems = verilexStore.getAll('ComplianceItem');
+
+  const caseSuggestions = cases.slice(0, 3).map((entry) => ({
+    label: `Status zu ${entry.caseNumber}`,
+    message: `Gib mir den aktuellen Stand zu "${entry.title}" (Akte ${entry.caseNumber}).`,
+    autoSend: false,
+  }));
+
+  const invoicePrompt = invoices.length
+    ? `Welche Rechnungen (${invoices.length}) sind offen oder überfällig?`
+    : 'Zeige mir fällige Rechnungen.';
+
+  const compliancePrompt = complianceItems.length
+    ? `Welche Compliance-Aufgaben (${complianceItems.length}) haben hohe Priorität?`
+    : 'Gibt es neue Compliance-Aufgaben?';
+
+  return [
+    ...caseSuggestions,
+    { label: 'Offene Rechnungen prüfen', message: invoicePrompt, autoSend: true },
+    { label: 'Fristen & Compliance', message: compliancePrompt, autoSend: true },
+  ];
+}
+
+function renderStoreSnapshot() {
+  if (!briefingContainer || !verilexStore) {
+    return;
+  }
+
+  let storeSection = briefingContainer.querySelector('.ai-briefing__store');
+  if (!storeSection) {
+    storeSection = document.createElement('section');
+    storeSection.className = 'ai-briefing__section ai-briefing__store';
+    briefingContainer.append(storeSection);
+  }
+
+  const caseCount = verilexStore.getAll('Case').length;
+  const invoiceCount = verilexStore.getAll('Invoice').length;
+  const complianceCount = verilexStore.getAll('ComplianceItem').length;
+  const communicationCount = verilexStore.getAll('Communication').length;
+
+  storeSection.innerHTML = `
+    <h3>Live-Daten aus dem zentralen Store</h3>
+    <ul class="ai-briefing__list">
+      <li>${caseCount} Fälle im Bestand</li>
+      <li>${invoiceCount} Rechnungen zur Auswertung</li>
+      <li>${complianceCount} Compliance-Aufgaben</li>
+      <li>${communicationCount} Nachrichten in der Inbox</li>
+    </ul>
+  `;
+}
 
 function parseJsonElement(elementId) {
   const element = document.getElementById(elementId);
@@ -491,8 +550,10 @@ function init() {
     return;
   }
 
-  renderActionButtons(quickActionsContainer, baseSuggestions);
+  const storeSuggestions = buildStoreSuggestions();
+  renderActionButtons(quickActionsContainer, [...storeSuggestions, ...baseSuggestions]);
   renderBriefing(briefingData);
+  renderStoreSnapshot();
   initializeConversation();
 
   formEl.addEventListener('submit', handleFormSubmit);
