@@ -379,6 +379,8 @@ function persistMandateToStore(data) {
     });
   }
 
+  verilexStore.setActiveCase(createdCase.id);
+
   return { client, createdCase };
 }
 

@@ -1,4 +1,5 @@
 import { overlayInstance } from './app.js';
+import { verilexStore } from './store.js';
 
 const documentListEl = document.getElementById('client-document-list');
 const documentResultEl = document.getElementById('client-document-result');
@@ -64,6 +65,13 @@ const state = {
   documentFilter: 'all',
   searchTerm: '',
   selectedFiles: [],
+};
+
+const STORE_STATUS_MAPPING = {
+  entwurf: 'review',
+  draft: 'review',
+  final: 'completed',
+  archiviert: 'completed',
 };
 
 function createId(prefix) {
@@ -133,6 +141,97 @@ function normalizeText(value) {
   return (value ?? '').toString().toLowerCase();
 }
 
+function getActivePortalContext() {
+  const fallbackCases = verilexStore?.getAll?.('Case') ?? [];
+  const activeContext = verilexStore?.getActiveContext?.() ?? {};
+  const caseId = activeContext.caseId ?? fallbackCases[0]?.id ?? null;
+  const selectedCase = caseId ? verilexStore.findEntity('Case', caseId) : fallbackCases[0] ?? null;
+  const client = selectedCase?.clientId ? verilexStore.findEntity('Client', selectedCase.clientId) : null;
+
+  if (!activeContext.caseId && selectedCase?.id) {
+    verilexStore.setActiveCase(selectedCase.id);
+  }
+
+  return {
+    caseId: selectedCase?.id ?? null,
+    clientId: client?.id ?? activeContext.clientId ?? null,
+    clientName: client?.name ?? state.clientName,
+    caseReference: selectedCase
+      ? `${selectedCase.caseNumber ?? 'AZ'} – ${selectedCase.title ?? 'Mandat'}`
+      : state.caseReference,
+  };
+}
+
+function mapDocumentFromStore(entry) {
+  if (!entry) return null;
+  const normalizedStatus = STORE_STATUS_MAPPING[normalizeText(entry.status)] ?? 'completed';
+  return {
+    id: entry.id ?? createId('doc'),
+    title: entry.title ?? entry.name ?? 'Dokument',
+    description: entry.notes ?? `Typ: ${entry.type ?? 'Allgemein'}`,
+    status: normalizedStatus,
+    category: entry.type ?? 'Allgemein',
+    updatedAt: entry.updatedAt ?? entry.createdAt ?? new Date().toISOString(),
+    size: entry.size ?? entry.fileSize ?? 0,
+    tags: entry.tags ?? [],
+    downloadUrl: entry.downloadUrl ?? 'about:blank',
+  };
+}
+
+function mapTaskFromStore(entry) {
+  if (!entry) return null;
+  const isDone = normalizeText(entry.status) === 'erledigt';
+  return {
+    id: entry.id ?? createId('task'),
+    title: entry.title ?? 'Aufgabe',
+    dueDate: entry.deadline ?? null,
+    status: isDone ? 'done' : 'open',
+    completedAt: isDone ? entry.completedAt ?? new Date().toISOString() : null,
+  };
+}
+
+function mapActivityFromStore(entry) {
+  if (!entry) return null;
+  return {
+    id: entry.id ?? createId('activity'),
+    timestamp: entry.date ?? entry.createdAt ?? new Date().toISOString(),
+    type: 'message',
+    actor: entry.senderName ?? entry.channel ?? 'Kanzlei',
+    content: entry.subject ?? entry.body ?? 'Neue Nachricht aus der Kanzlei',
+    meta: [entry.status ? `Status: ${entry.status}` : 'Kommunikation'],
+  };
+}
+
+function buildPortalSnapshotFromStore() {
+  if (!verilexStore) return null;
+  const context = getActivePortalContext();
+  if (!context.caseId) {
+    return null;
+  }
+
+  const documents = (verilexStore.getAll('Document') ?? [])
+    .filter((doc) => !context.caseId || doc.caseId === context.caseId)
+    .map((doc) => mapDocumentFromStore(doc))
+    .filter(Boolean);
+
+  const tasks = (verilexStore.getAll('ComplianceItem') ?? [])
+    .filter((item) => !context.caseId || item.caseId === context.caseId)
+    .map((item) => mapTaskFromStore(item))
+    .filter(Boolean);
+
+  const activities = (verilexStore.getAll('Communication') ?? [])
+    .filter((item) => !context.caseId || item.caseId === context.caseId)
+    .map((item) => mapActivityFromStore(item))
+    .filter(Boolean);
+
+  return {
+    context,
+    documents,
+    tasks,
+    activities,
+  };
+}
+
 function updateHero(data) {
   if (data.clientName) {
     state.clientName = data.clientName;
@@ -162,6 +261,24 @@ function updateMetrics() {
 
 function getStatusLabel(status) {
   return STATUS_LABELS[status] ?? 'Bereitgestellt';
+}
+
+function applyPortalSnapshot(snapshot) {
+  if (!snapshot) return false;
+  const { context, documents, tasks, activities } = snapshot;
+  state.clientName = context.clientName ?? state.clientName;
+  state.caseReference = context.caseReference ?? state.caseReference;
+  state.documents = Array.isArray(documents) ? documents : [];
+  state.tasks = Array.isArray(tasks) ? tasks : [];
+  state.activities = Array.isArray(activities) ? activities : [];
+
+  updateHero({ clientName: state.clientName, caseReference: state.caseReference });
+  setActiveFilterButton();
+  renderDocuments();
+  renderTasks();
+  renderActivities();
+  updateMetrics();
+  return true;
 }
 
 function renderDocuments() {
@@ -401,6 +518,15 @@ function renderActivities() {
     });
 }
 
+function syncPortalFromStore() {
+  const snapshot = buildPortalSnapshotFromStore();
+  if (snapshot) {
+    applyPortalSnapshot(snapshot);
+    return true;
+  }
+  return false;
+}
+
 function showDocumentFeedback(message, type = 'info') {
   if (!documentFeedbackEl) {
     return;
@@ -522,6 +648,11 @@ function handleTaskToggle(event) {
   task.status = checkbox.checked ? 'done' : 'open';
   task.completedAt = checkbox.checked ? new Date().toISOString() : null;
 
+  verilexStore?.updateEntity?.('ComplianceItem', task.id, {
+    status: checkbox.checked ? 'erledigt' : 'offen',
+    completedAt: task.completedAt,
+  });
+
   appendActivity({
     type: 'task',
     content: checkbox.checked
@@ -612,20 +743,48 @@ function handleDragLeave() {
 
 function addUploadedDocuments() {
   const now = new Date();
-  const newDocs = state.selectedFiles.map((file) => ({
-    id: createId('doc'),
-    title: file.name,
-    description: 'Upload durch Mandantenportal – das Kanzleiteam prüft die Datei zeitnah.',
-    status: 'review',
-    category: 'Upload',
-    updatedAt: now.toISOString(),
-    size: file.size,
-    tags: ['Upload', 'Wartet auf Prüfung'],
-    downloadUrl: 'about:blank',
-  }));
+  const context = getActivePortalContext();
+  if (!context.caseId) {
+    showUploadFeedback('Bitte wählen Sie zuerst ein Mandat im Kopfbereich aus.', 'error');
+    return;
+  }
+
+  const newDocs = state.selectedFiles.map((file) => {
+    const payload = {
+      title: file.name,
+      description: 'Upload durch Mandantenportal – das Kanzleiteam prüft die Datei zeitnah.',
+      status: 'review',
+      category: 'Upload',
+      updatedAt: now.toISOString(),
+      size: file.size,
+      tags: ['Upload', 'Wartet auf Prüfung'],
+      downloadUrl: 'about:blank',
+      caseId: context.caseId,
+      createdAt: now.toISOString(),
+      createdBy: verilexStore?.getAll?.('User')?.[0]?.id ?? null,
+      type: 'Upload',
+    };
+
+    const stored = verilexStore?.addEntity?.('Document', payload);
+    return mapDocumentFromStore(stored ?? payload);
+  });
+
   if (newDocs.length === 0) {
     return;
   }
+
+  newDocs.forEach((doc) => {
+    verilexStore?.addCommunication?.({
+      caseId: context.caseId,
+      clientId: context.clientId,
+      subject: `Upload: ${doc.title}`,
+      status: 'unread',
+      channel: 'Mandantenportal',
+      senderName: context.clientName,
+      body: 'Neuer Upload über das Mandantenportal eingegangen.',
+    });
+  });
+
   state.documents = [...newDocs, ...state.documents];
   appendActivity({
     type: 'upload',
@@ -633,6 +792,7 @@ function addUploadedDocuments() {
     meta: ['Status: Prüfung ausstehend'],
   });
   renderDocuments();
+  renderActivities();
   updateMetrics();
 }
 
@@ -677,42 +837,40 @@ function bindEvents() {
 }
 
 function bootstrap() {
-  const seedData = parseSeedData();
-  if (!seedData) {
-    return;
+  const synced = syncPortalFromStore();
+
+  if (!synced) {
+    const seedData = parseSeedData();
+    if (!seedData) {
+      return;
+    }
+
+    applyPortalSnapshot({
+      context: { clientName: seedData.clientName, caseReference: seedData.caseReference },
+      documents: Array.isArray(seedData.documents)
+        ? seedData.documents.map((doc) => ({
+            ...doc,
+            status: doc.status ?? 'completed',
+            id: doc.id ?? createId('doc'),
+          }))
+        : [],
+      tasks: Array.isArray(seedData.tasks)
+        ? seedData.tasks.map((task) => ({
+            ...task,
+            status: task.status === 'done' ? 'done' : 'open',
+            completedAt: task.completedAt ?? null,
+            id: task.id ?? createId('task'),
+          }))
+        : [],
+      activities: Array.isArray(seedData.activities)
+        ? seedData.activities.map((activity) => ({
+            ...activity,
+            id: activity.id ?? createId('activity'),
+          }))
+        : [],
+    });
   }
 
-  updateHero(seedData);
-
-  state.documents = Array.isArray(seedData.documents)
-    ? seedData.documents.map((doc) => ({
-        ...doc,
-        status: doc.status ?? 'completed',
-        id: doc.id ?? createId('doc'),
-      }))
-    : [];
-
-  state.tasks = Array.isArray(seedData.tasks)
-    ? seedData.tasks.map((task) => ({
-        ...task,
-        status: task.status === 'done' ? 'done' : 'open',
-        completedAt: task.completedAt ?? null,
-        id: task.id ?? createId('task'),
-      }))
-    : [];
-
-  state.activities = Array.isArray(seedData.activities)
-    ? seedData.activities.map((activity) => ({
-        ...activity,
-        id: activity.id ?? createId('activity'),
-      }))
-    : [];
-
-  setActiveFilterButton();
-  renderDocuments();
-  renderTasks();
-  renderActivities();
-  updateMetrics();
   showDocumentFeedback('', 'info');
   showUploadFeedback('', 'success');
 
@@ -720,6 +878,11 @@ function bootstrap() {
 }
 
 try {
+  if (verilexStore) {
+    ['storeReady', 'storeChanged', 'storeReset', 'activeContextChanged'].forEach((eventName) =>
+      verilexStore.on(eventName, syncPortalFromStore)
+    );
+  }
   bootstrap();
 } catch (error) {
   console.error('Mandantenportal konnte nicht initialisiert werden.', error);
