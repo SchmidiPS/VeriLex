@@ -1,3 +1,5 @@
+import { verilexStore } from './store.js';
+
 (function () {
   const paletteItems = document.querySelectorAll('[data-workflow-step]');
   const canvas = document.getElementById('workflow-canvas');
@@ -14,8 +16,73 @@
 
   const nodes = new Map();
   let connections = [];
+  let activeWorkflowId = null;
   let selection = null;
   let nodeCounter = 0;
+
+  function serializeNodes() {
+    const canvasRect = canvas.getBoundingClientRect();
+    return Array.from(nodes.values()).map(({ id, label, element }) => ({
+      id,
+      label,
+      position: {
+        x: element.offsetLeft,
+        y: element.offsetTop,
+        width: element.offsetWidth,
+        height: element.offsetHeight,
+        canvasLeft: canvasRect.left,
+        canvasTop: canvasRect.top,
+      },
+    }));
+  }
+
+  function persistWorkflow() {
+    const payload = {
+      name: 'Workflow Designer Entwurf',
+      nodes: serializeNodes(),
+      connections: connections.map((connection) => ({ ...connection })),
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (activeWorkflowId) {
+      verilexStore.updateWorkflow(activeWorkflowId, payload);
+    } else {
+      const created = verilexStore.addWorkflow(payload);
+      activeWorkflowId = created.id;
+    }
+  }
+
+  function restoreWorkflow(workflow) {
+    nodes.clear();
+    connections = [];
+    nodeCounter = 0;
+
+    (workflow.nodes ?? []).forEach((node) => {
+      const left = node.position?.x ?? 40;
+      const top = node.position?.y ?? 40;
+      createNode(node.label, { x: left, y: top }, node.id, true);
+      const numericId = Number.parseInt(String(node.id).split('-').pop(), 10);
+      if (!Number.isNaN(numericId)) {
+        nodeCounter = Math.max(nodeCounter, numericId);
+      }
+    });
+
+    connections = (workflow.connections ?? []).map((connection) => ({ ...connection }));
+    updateConnections();
+    renderConnectionList();
+    updateConnectionSummary();
+  }
+
+  function ensureWorkflowLoaded() {
+    const workflows = verilexStore.getAll('Workflow');
+    const baseWorkflow = workflows[0];
+    if (baseWorkflow) {
+      activeWorkflowId = baseWorkflow.id;
+      restoreWorkflow(baseWorkflow);
+    } else {
+      persistWorkflow();
+    }
+  }
 
   function updateConnectionSummary() {
     const count = connections.length;
@@ -80,8 +147,8 @@
     connectionList.append(fragment);
   }
 
-  function createNode(label, position) {
-    const id = `node-${++nodeCounter}`;
+  function createNode(label, position, providedId = null, useOffsets = false) {
+    const id = providedId || `node-${++nodeCounter}`;
     const nodeElement = document.createElement('div');
     nodeElement.className = 'workflow-node';
     nodeElement.dataset.nodeId = id;
@@ -110,8 +177,13 @@
 
     canvas.append(nodeElement);
 
-    const { x, y } = position;
-    positionNode(nodeElement, x, y);
+    if (useOffsets) {
+      nodeElement.style.left = `${position.x}px`;
+      nodeElement.style.top = `${position.y}px`;
+    } else {
+      const { x, y } = position;
+      positionNode(nodeElement, x, y);
+    }
 
     enableDragging(nodeElement);
     nodeElement.addEventListener('click', () => {
@@ -136,6 +208,7 @@
     nodes.set(id, { id, element: nodeElement, label });
     announceSelection(null);
     updateConnections();
+    persistWorkflow();
     return nodeElement;
   }
 
@@ -210,6 +283,9 @@
         delete element.dataset.moved;
       }
       updateConnections();
+      if (moved) {
+        persistWorkflow();
+      }
     };
 
     element.addEventListener('pointerdown', handlePointerDown);
@@ -269,6 +345,7 @@
     updateConnections();
     renderConnectionList();
     updateConnectionSummary();
+    persistWorkflow();
   }
 
   function addConnection(fromId, toId) {
@@ -287,6 +364,7 @@
     updateConnections();
     renderConnectionList();
     updateConnectionSummary();
+    persistWorkflow();
   }
 
   function removeConnection(connectionId) {
@@ -294,6 +372,7 @@
     updateConnections();
     renderConnectionList();
     updateConnectionSummary();
+    persistWorkflow();
   }
 
   function updateConnections() {
@@ -394,6 +473,7 @@
     updateConnections();
     renderConnectionList();
     updateConnectionSummary();
+    persistWorkflow();
   }
 
   function handleKeyDown(event) {
@@ -423,6 +503,8 @@
   canvas.addEventListener('drop', handleCanvasDrop);
   canvas.addEventListener('keydown', handleKeyDown);
   window.addEventListener('resize', updateConnections);
+
+  ensureWorkflowLoaded();
 
   if (clearButton) {
     clearButton.addEventListener('click', () => {

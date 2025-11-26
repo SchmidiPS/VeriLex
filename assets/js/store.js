@@ -6,7 +6,10 @@ const ENTITY_COLLECTIONS = {
   TimeEntry: 'timeEntries',
   Invoice: 'invoices',
   ComplianceItem: 'complianceItems',
-  Appointment: 'appointments'
+  Appointment: 'appointments',
+  Communication: 'communications',
+  Template: 'templates',
+  Workflow: 'workflows'
 };
 
 const ENTITY_PREFIX = {
@@ -17,7 +20,10 @@ const ENTITY_PREFIX = {
   TimeEntry: 'te',
   Invoice: 'inv',
   ComplianceItem: 'co',
-  Appointment: 'ap'
+  Appointment: 'ap',
+  Communication: 'cm',
+  Template: 'tpl',
+  Workflow: 'wf'
 };
 
 class VeriLexEventBus {
@@ -269,6 +275,30 @@ class VeriLexStore {
 
   updateInvoice(id, updates) {
     return this.updateEntity('Invoice', id, updates);
+  }
+
+  addCommunication(data) {
+    return this.addEntity('Communication', data);
+  }
+
+  updateCommunication(id, updates) {
+    return this.updateEntity('Communication', id, updates);
+  }
+
+  addTemplate(data) {
+    return this.addEntity('Template', data);
+  }
+
+  updateTemplate(id, updates) {
+    return this.updateEntity('Template', id, updates);
+  }
+
+  addWorkflow(data) {
+    return this.addEntity('Workflow', data);
+  }
+
+  updateWorkflow(id, updates) {
+    return this.updateEntity('Workflow', id, updates);
   }
 }
 

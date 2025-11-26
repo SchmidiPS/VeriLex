@@ -1,4 +1,5 @@
 import { overlayInstance } from './app.js';
+import { verilexStore } from './store.js';
 
 function parseTemplateData() {
   const dataEl = document.getElementById('template-data');
@@ -57,10 +58,29 @@ function parseTemplateData() {
   }
 }
 
-const templates = parseTemplateData();
+function ensureTemplatesSeeded() {
+  const existing = verilexStore?.getAll('Template') ?? [];
+  if (existing.length > 0) {
+    return;
+  }
+
+  const inlineTemplates = parseTemplateData();
+  inlineTemplates.forEach((template) => {
+    verilexStore?.addTemplate?.(template);
+  });
+}
+
+function refreshTemplates() {
+  state.templates = verilexStore?.getAll('Template') ?? [];
+  state.filteredTemplates = state.templates.slice();
+  if (!state.activeTemplateId && state.templates.length > 0) {
+    state.activeTemplateId = state.templates[0].id;
+  }
+}
+
 const state = {
-  templates,
-  filteredTemplates: templates.slice(),
+  templates: [],
+  filteredTemplates: [],
   activeTemplateId: null,
   userInputs: new Map(),
   feedbackTimeout: null,
@@ -578,6 +598,19 @@ function init() {
   if (!templateListEl) {
     return;
   }
+
+  ensureTemplatesSeeded();
+  refreshTemplates();
+  verilexStore?.on?.('templateAdded', () => {
+    refreshTemplates();
+    renderTemplateList();
+    ensureSelectionOnLoad();
+  });
+  verilexStore?.on?.('templateUpdated', () => {
+    refreshTemplates();
+    renderTemplateList();
+    ensureSelectionOnLoad();
+  });
 
   renderTemplateList();
   ensureSelectionOnLoad();

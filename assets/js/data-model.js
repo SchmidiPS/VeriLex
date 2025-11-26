@@ -10,7 +10,9 @@
     invoiceStatus: ["entwurf", "versendet", "bezahlt", "überfällig"],
     complianceStatus: ["offen", "in Prüfung", "erledigt"],
     riskLevel: ["niedrig", "mittel", "hoch"],
-    appointmentType: ["Hearing", "Frist", "Mandantentermin", "Internal"]
+    appointmentType: ["Hearing", "Frist", "Mandantentermin", "Internal"],
+    communicationStatus: ["unread", "read", "archived"],
+    templateCategory: ["Forderungsmanagement", "Mandantenkommunikation", "Arbeitsrecht", "Workflow"]
   };
 
   const entities = {
@@ -191,6 +193,61 @@
         { type: "belongsTo", target: "Case", via: "caseId" },
         { type: "hasMany", target: "User", via: "participants" },
         { type: "dependsOn", target: "ComplianceItem", via: "relatedComplianceItemId" }
+      ]
+    },
+    Communication: {
+      name: "Communication",
+      primaryKey: "id",
+      description: "Eingehende oder ausgehende E-Mails und Benachrichtigungen",
+      fields: [
+        { name: "id", type: "string", required: true, description: "Kurz-ID" },
+        { name: "subject", type: "string", required: true, description: "Betreffzeile" },
+        { name: "caseId", type: "string", required: false, description: "Optionaler Bezug zur Akte" },
+        { name: "clientId", type: "string", required: false, description: "Optionaler Bezug zum Mandanten" },
+        { name: "sender", type: "object", required: true, description: "Absenderinformationen" },
+        { name: "recipients", type: "object[]", required: true, description: "Empfänger" },
+        { name: "cc", type: "object[]", required: false, description: "Kopie-Empfänger" },
+        { name: "receivedAt", type: "date", required: true, description: "Eingangszeitpunkt" },
+        { name: "status", type: "enum", enum: "communicationStatus", required: true, description: "Gelesen/Archiviert" },
+        { name: "tags", type: "string[]", required: false, description: "Labels für Filter" },
+        { name: "body", type: "string[]", required: false, description: "Textinhalt als Zeilen" },
+        { name: "attachments", type: "object[]", required: false, description: "Name/URL für Anhänge" }
+      ],
+      relationships: [
+        { type: "belongsTo", target: "Case", via: "caseId" },
+        { type: "belongsTo", target: "Client", via: "clientId" }
+      ]
+    },
+    Template: {
+      name: "Template",
+      primaryKey: "id",
+      description: "Textbausteine für Schriftsätze und Kommunikation",
+      fields: [
+        { name: "id", type: "string", required: true, description: "Kurz-ID" },
+        { name: "name", type: "string", required: true, description: "Anzeigename" },
+        { name: "category", type: "enum", enum: "templateCategory", required: true, description: "Klassifizierung" },
+        { name: "summary", type: "string", required: false, description: "Kurzbeschreibung" },
+        { name: "tags", type: "string[]", required: false, description: "Filter-Labels" },
+        { name: "placeholders", type: "object[]", required: false, description: "Variablen inkl. Typ und Default" },
+        { name: "body", type: "string", required: true, description: "Vorlagentext mit Platzhaltern" }
+      ],
+      relationships: [
+        { type: "referencedBy", target: "Document", via: "templateId" }
+      ]
+    },
+    Workflow: {
+      name: "Workflow",
+      primaryKey: "id",
+      description: "Gespeicherte Prozess-Layouts des Designers",
+      fields: [
+        { name: "id", type: "string", required: true, description: "Kurz-ID" },
+        { name: "name", type: "string", required: true, description: "Titel des Workflows" },
+        { name: "nodes", type: "object[]", required: true, description: "Knoten mit Position und Label" },
+        { name: "connections", type: "object[]", required: true, description: "Verbindungen zwischen Knoten" },
+        { name: "updatedAt", type: "date", required: true, description: "Zuletzt gespeichert" }
+      ],
+      relationships: [
+        { type: "mayReference", target: "Case", via: "caseId" }
       ]
     }
   };
@@ -590,6 +647,135 @@
         participants: ["u-partner", "u-associate"],
         location: "LG Berlin, Saal 3",
         relatedComplianceItemId: "co-21"
+      }
+    ],
+    communications: [
+      {
+        id: "mail-001",
+        subject: "Fristverlängerung Weber ./. Wohnbau AG",
+        caseId: "ca-2045",
+        clientId: "cl-lexon",
+        sender: { name: "Sabine Keller", email: "sabine.keller@wohnbau-ag.demo" },
+        recipients: [{ name: "Dr. Jana Vogt", email: "jana.vogt@verilex.demo" }],
+        cc: [{ name: "Fristen-Team", email: "fristen@verilex.demo" }],
+        receivedAt: "2025-11-05T08:15:00+01:00",
+        status: "unread",
+        tags: ["Frist", "Zivilrecht"],
+        body: [
+          "Guten Morgen Frau Dr. Vogt,",
+          "wir bestätigen den Eingang Ihres Antrags auf Fristverlängerung und benötigen noch das unterschriebene Vergleichsangebot der Gegenseite. Bitte senden Sie uns die Unterlagen bis spätestens morgen, damit wir der Kammer antworten können.",
+          "Mit freundlichen Grüßen",
+          "Sabine Keller"
+        ],
+        attachments: [{ name: "Fristvermerk.pdf", url: "assets/mock/verilex-demo.pdf" }]
+      },
+      {
+        id: "mail-002",
+        subject: "Mandant Schmidt – Rückfrage zur Honorarvereinbarung",
+        caseId: "ca-2049",
+        clientId: "cl-schmidt",
+        sender: { name: "Eva Schmidt", email: "eva.schmidt@example.com" },
+        recipients: [{ name: "Team Arbeitsrecht", email: "arbeitsrecht@verilex.demo" }],
+        cc: [],
+        receivedAt: "2025-11-04T18:42:00+01:00",
+        status: "read",
+        tags: ["Mandant", "Honorar"],
+        body: [
+          "Guten Abend liebes Team,",
+          "ich habe die Honorarvereinbarung gelesen und hätte gerne eine kurze Erläuterung zu den aufgeführten Reisekosten.",
+          "Vielen Dank!",
+          "Eva Schmidt"
+        ],
+        attachments: []
+      },
+      {
+        id: "mail-003",
+        subject: "Neues Dokument: Klageentwurf final",
+        caseId: "ca-2045",
+        clientId: "cl-lexon",
+        sender: { name: "DMS Bot", email: "dms@verilex.demo" },
+        recipients: [{ name: "Kanzlei VeriLex", email: "kanzlei@verilex.demo" }],
+        receivedAt: "2025-11-03T10:05:00+01:00",
+        status: "unread",
+        tags: ["DMS", "Dokument"],
+        body: [
+          "Das Dokument 'Klageentwurf_final.pdf' wurde hochgeladen und wartet auf Freigabe.",
+          "Bitte prüfen Sie das Dokument und geben Sie es für den Versand frei."
+        ],
+        attachments: [{ name: "Klageentwurf_final.pdf", url: "assets/mock/verilex-demo.pdf" }]
+      },
+      {
+        id: "mail-004",
+        subject: "ERV Versandbestätigung Amtsgericht Köln",
+        caseId: "ca-2046",
+        clientId: "cl-hartmann",
+        sender: { name: "ERV Service", email: "erv@egvp.demo" },
+        recipients: [{ name: "erv@verilex.demo", email: "erv@verilex.demo" }],
+        receivedAt: "2025-11-02T22:10:00+01:00",
+        status: "archived",
+        tags: ["ERV", "System"],
+        body: [
+          "Sehr geehrte Damen und Herren,",
+          "der elektronische Rechtsverkehr meldet den erfolgreichen Versand des Pakets ERV-2025-014 an das Amtsgericht Köln.",
+          "Der qualifizierte Sendebericht steht im Portal zum Abruf bereit.",
+          "Mit freundlichen Grüßen",
+          "Ihre ERV Poststelle"
+        ],
+        attachments: []
+      }
+    ],
+    templates: [
+      {
+        id: "tpl-demand-letter",
+        name: "Zahlungsaufforderung mit Frist",
+        category: "Forderungsmanagement",
+        summary: "Formales Anschreiben an die Gegenseite mit klarer Zahlungsfrist und Ansprechpartner.",
+        tags: ["Mahnung", "Fristsetzung", "Zivilrecht"],
+        placeholders: [
+          { id: "recipient", label: "Adressat:in (inkl. Anrede)", type: "text", defaultValue: "Sehr geehrte Frau Schulz" },
+          { id: "reference", label: "Aktenzeichen/Referenz", type: "text", defaultValue: "V-2024-017" },
+          { id: "claimAmount", label: "Forderungsbetrag", type: "text", defaultValue: "3.450,00 €" },
+          { id: "dueDate", label: "Zahlungsfrist", type: "text", defaultValue: "15.11.2025" },
+          { id: "contact", label: "Kontakt für Rückfragen", type: "text", defaultValue: "RAin Dr. Hannah Keller, Tel. 089 1234 56-0" }
+        ],
+        body:
+          "{{recipient}},\n\nunter Bezugnahme auf unsere Angelegenheit {{reference}} fordern wir Sie letztmalig auf, den ausstehenden Betrag in Höhe von {{claimAmount}} bis spätestens {{dueDate}} auf das bekannte Kanzleikonto zu überweisen.\n\nSollten Sie Rückfragen haben, wenden Sie sich bitte an {{contact}}.\n\nMit freundlichen Grüßen\nVeriLex Kanzlei-Team"
+      },
+      {
+        id: "tpl-status-update",
+        name: "Statusbericht an Mandant:in",
+        category: "Mandantenkommunikation",
+        summary: "Kurzer Statusbericht zu offenen Aufgaben und nächsten Schritten.",
+        tags: ["Update", "Mandant", "Transparenz"],
+        placeholders: [
+          { id: "clientName", label: "Mandant:in", type: "text", defaultValue: "Müller GmbH" },
+          { id: "caseTopic", label: "Anliegen/Projekt", type: "text", defaultValue: "Vertragsprüfung Lieferantenrahmenvertrag" },
+          { id: "currentStatus", label: "Aktueller Status", type: "textarea", defaultValue: "Der Vertragsentwurf wurde überarbeitet und enthält nun die gewünschten Klauseln zur Haftungsbegrenzung." },
+          { id: "nextSteps", label: "Nächste Schritte", type: "textarea", defaultValue: "Besprechung mit dem Einkaufsteam am 07.11. vorbereiten und Feedback in Fassung 4 einarbeiten." },
+          { id: "contactPerson", label: "Kontaktperson", type: "text", defaultValue: "RAin Dr. Hannah Keller" }
+        ],
+        body:
+          "Liebe/r {{clientName}},\n\nkurzes Update zu {{caseTopic}}:\n\nAktueller Stand:\n{{currentStatus}}\n\nNächste Schritte:\n{{nextSteps}}\n\nFür Rückfragen steht {{contactPerson}} gerne bereit."
+      }
+    ],
+    workflows: [
+      {
+        id: "wf-default",
+        name: "Standardprozess Zivilverfahren",
+        nodes: [
+          { id: "node-1", label: "Mandatsanlage", position: { x: 120, y: 120 } },
+          { id: "node-2", label: "Dokumentenprüfung", position: { x: 320, y: 120 } },
+          { id: "node-3", label: "Fristenkontrolle", position: { x: 520, y: 120 } },
+          { id: "node-4", label: "Erstellung Schriftsatz", position: { x: 320, y: 260 } },
+          { id: "node-5", label: "Versand über ERV", position: { x: 520, y: 260 } }
+        ],
+        connections: [
+          { id: "conn-1", fromId: "node-1", toId: "node-2" },
+          { id: "conn-2", fromId: "node-2", toId: "node-3" },
+          { id: "conn-3", fromId: "node-3", toId: "node-4" },
+          { id: "conn-4", fromId: "node-4", toId: "node-5" }
+        ],
+        updatedAt: "2025-11-27T10:00:00Z"
       }
     ]
   };
