@@ -1,3 +1,5 @@
+import { verilexStore } from './store.js';
+
 class GlobalErrorOverlay {
   constructor(root) {
     this.root = root;
@@ -333,6 +335,68 @@ function formatDate(value) {
   }
 }
 
+function persistMandateToStore(data) {
+  if (!verilexStore) {
+    return null;
+  }
+
+  const normalizedClientName = data.clientName?.trim();
+  const clientCollection = verilexStore.getAll('Client');
+  const existingClient = normalizedClientName
+    ? clientCollection.find((client) => client.name.toLowerCase() === normalizedClientName.toLowerCase())
+    : null;
+
+  const client =
+    existingClient ||
+    verilexStore.addEntity('Client', {
+      name: normalizedClientName || 'Unbekannter Mandant',
+      contactEmail: data.contactEmail || 'unbekannt@example.com',
+      phone: data.contactPhone || '',
+      organizationType: data.practiceArea || 'Allgemein',
+      preferredBilling: 'nach Stunden',
+    });
+
+  const casePayload = {
+    caseNumber: data.mandateNumber || data.reference || `VX-${new Date().getFullYear()}-${Math.floor(Math.random() * 9999)}`,
+    title: data.matterSummary?.trim() || 'Neues Mandat',
+    clientId: client.id,
+    status: 'neu',
+    priority: data.urgency || 'mittel',
+    category: formatLabel(data.practiceArea ?? 'Allgemein'),
+    openedAt: new Date().toISOString().slice(0, 10),
+    deadlines: [],
+  };
+
+  const createdCase = verilexStore.addCase(casePayload);
+
+  if (data.initialDeadline) {
+    verilexStore.addEntity('Appointment', {
+      caseId: createdCase.id,
+      dateTime: new Date(data.initialDeadline).toISOString(),
+      type: 'Frist',
+      description: 'Initiale Frist aus Mandatsanlage',
+      participants: [],
+    });
+  }
+
+  return { client, createdCase };
+}
+
+function updateSuccessMessage(successMessage, persistedData) {
+  if (!successMessage || !persistedData?.createdCase) {
+    return;
+  }
+
+  let metaLine = successMessage.querySelector('.wizard-success__meta');
+  if (!metaLine) {
+    metaLine = document.createElement('p');
+    metaLine.className = 'wizard-success__meta';
+    successMessage.append(metaLine);
+  }
+
+  metaLine.textContent = `Akte ${persistedData.createdCase.caseNumber} für ${persistedData.client.name} wurde im zentralen Store gespeichert.`;
+}
+
 function resetErrors(step) {
   step.querySelectorAll('.field-error').forEach((el) => {
     el.textContent = '';
@@ -517,6 +581,9 @@ function initWizard() {
 
     formState = collectFormData(form);
     renderSummary(summaryContainer, formState);
+
+    const persisted = persistMandateToStore(formState);
+    updateSuccessMessage(successMessage, persisted);
 
     form.setAttribute('hidden', '');
     successMessage?.removeAttribute('hidden');
