@@ -1,44 +1,23 @@
+import { verilexStore } from './store.js';
 import { overlayInstance } from './app.js';
 
-function parseCaseData() {
-  const dataElement = document.getElementById('case-detail-data');
-  if (!dataElement) {
-    return { cases: [] };
-  }
+const ICON_MAP = {
+  document: '📄',
+  deadline: '⏰',
+  note: '📝',
+  activity: '✅',
+};
 
-  try {
-    const raw = dataElement.textContent ?? '{}';
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object') {
-      return parsed;
-    }
-  } catch (error) {
-    console.error('Die Falldaten konnten nicht geladen werden.', error);
-    overlayInstance?.show?.({
-      title: 'Daten konnten nicht geladen werden',
-      message: 'Die Detailinformationen zur Akte stehen derzeit nicht zur Verfügung.',
-      details: error,
-    });
-  }
+const FILTER_LABELS = {
+  all: 'Alle Ereignisse',
+  document: 'Dokumente',
+  deadline: 'Fristen',
+  note: 'Notizen',
+  activity: 'Aktivitäten',
+};
 
-  return { cases: [] };
-}
-
-function getCurrentCase(allCases) {
-  const params = new URLSearchParams(window.location.search);
-  const caseNumber = params.get('case');
-
-  if (caseNumber) {
-    const match = allCases.find(
-      (entry) => entry.caseNumber?.toString().toLowerCase() === caseNumber.toString().toLowerCase()
-    );
-    if (match) {
-      return match;
-    }
-  }
-
-  return allCases[0];
-}
+let currentFilter = 'all';
+let currentTimelineItems = [];
 
 function formatDateTime(value) {
   if (!value) {
@@ -56,6 +35,18 @@ function formatDateTime(value) {
   }).format(date);
 }
 
+function formatDuration(minutes) {
+  if (!minutes || Number.isNaN(Number(minutes))) {
+    return null;
+  }
+
+  const hrs = Math.floor(minutes / 60);
+  const mins = Math.round(minutes % 60);
+  if (hrs === 0) return `${mins} Minuten`;
+  if (mins === 0) return `${hrs} Stunden`;
+  return `${hrs} Std ${mins} Min`;
+}
+
 function createTagElement(label) {
   const span = document.createElement('span');
   span.className = 'case-tag';
@@ -64,7 +55,7 @@ function createTagElement(label) {
   return span;
 }
 
-function renderSidebar(caseData) {
+function renderSidebar(caseData, lookups, timeline) {
   const numberEl = document.getElementById('case-number');
   const titleEl = document.getElementById('case-detail-title');
   const clientEl = document.getElementById('case-client');
@@ -80,19 +71,30 @@ function renderSidebar(caseData) {
     return;
   }
 
+  const clientName = lookups.clients[caseData.clientId]?.name ?? 'Nicht hinterlegt';
+  const responsibleUserId = Array.isArray(caseData.assignedUsers) ? caseData.assignedUsers[0] : null;
+  const responsibleName = responsibleUserId
+    ? lookups.users[responsibleUserId]?.name ?? 'Noch nicht zugewiesen'
+    : 'Noch nicht zugewiesen';
+
+  const latestTimestamp = timeline.length > 0 ? timeline[0].timestamp : caseData.openedAt;
+
   document.title = `VeriLex – ${caseData.title ?? 'Akten-Detail'}`;
 
   numberEl.textContent = caseData.caseNumber ?? 'Ohne Aktenzeichen';
   titleEl.textContent = caseData.title ?? 'Unbenannte Akte';
-  clientEl.textContent = caseData.client ?? 'Nicht hinterlegt';
-  responsibleEl.textContent = caseData.responsible ?? 'Noch nicht zugewiesen';
-  practiceEl.textContent = caseData.practiceArea ?? '—';
-  updatedEl.textContent = formatDateTime(caseData.lastUpdated);
+  clientEl.textContent = clientName;
+  responsibleEl.textContent = responsibleName;
+  practiceEl.textContent = caseData.category ?? '—';
+  updatedEl.textContent = formatDateTime(latestTimestamp);
   statusEl.textContent = caseData.status ?? 'Status unbekannt';
   priorityEl.textContent = caseData.priority ?? '';
 
   tagsContainer.innerHTML = '';
-  const tags = Array.isArray(caseData.tags) ? caseData.tags : [];
+  const tags = [caseData.category, caseData.priority, lookups.clients[caseData.clientId]?.preferredBilling]
+    .filter(Boolean)
+    .map((tag) => tag.toString());
+
   if (tags.length === 0) {
     const emptyTag = document.createElement('span');
     emptyTag.className = 'case-tags__empty';
@@ -105,7 +107,7 @@ function renderSidebar(caseData) {
   }
 
   stepsContainer.innerHTML = '';
-  const steps = Array.isArray(caseData.nextSteps) ? caseData.nextSteps : [];
+  const steps = deriveNextSteps(caseData, lookups.complianceItemsByCase[caseData.id] ?? []);
   if (steps.length === 0) {
     const emptyStep = document.createElement('li');
     emptyStep.className = 'case-next-steps__empty';
@@ -122,20 +124,30 @@ function renderSidebar(caseData) {
   }
 }
 
-const ICON_MAP = {
-  document: '📄',
-  deadline: '⏰',
-  note: '📝',
-  activity: '✅',
-};
+function renderTimelineMeta(event) {
+  const metaEntries = [];
+  if (event.author) {
+    metaEntries.push(`<span class="timeline-meta__item">Autor: ${event.author}</span>`);
+  }
+  if (event.attachment) {
+    metaEntries.push(`<span class="timeline-meta__item">Anhang: ${event.attachment}</span>`);
+  }
+  if (event.status) {
+    metaEntries.push(`<span class="timeline-meta__item">Status: ${event.status}</span>`);
+  }
+  if (event.duration) {
+    metaEntries.push(`<span class="timeline-meta__item">Dauer: ${event.duration}</span>`);
+  }
+  if (event.risk) {
+    metaEntries.push(`<span class="timeline-meta__item">Risiko: ${event.risk}</span>`);
+  }
 
-const FILTER_LABELS = {
-  all: 'Alle Ereignisse',
-  document: 'Dokumente',
-  deadline: 'Fristen',
-  note: 'Notizen',
-  activity: 'Aktivitäten',
-};
+  if (metaEntries.length === 0) {
+    return '';
+  }
+
+  return `<div class="timeline-meta">${metaEntries.join('')}</div>`;
+}
 
 function createTimelineItem(event) {
   const li = document.createElement('li');
@@ -160,28 +172,6 @@ function createTimelineItem(event) {
   `;
 
   return li;
-}
-
-function renderTimelineMeta(event) {
-  const metaEntries = [];
-  if (event.author) {
-    metaEntries.push(`<span class="timeline-meta__item">Autor: ${event.author}</span>`);
-  }
-  if (event.attachment) {
-    metaEntries.push(`<span class="timeline-meta__item">Anhang: ${event.attachment}</span>`);
-  }
-  if (event.status) {
-    metaEntries.push(`<span class="timeline-meta__item">Status: ${event.status}</span>`);
-  }
-  if (event.duration) {
-    metaEntries.push(`<span class="timeline-meta__item">Dauer: ${event.duration}</span>`);
-  }
-
-  if (metaEntries.length === 0) {
-    return '';
-  }
-
-  return `<div class="timeline-meta">${metaEntries.join('')}</div>`;
 }
 
 function sortTimeline(events) {
@@ -245,7 +235,7 @@ function applyTimelineFilter(items, filter) {
   }
 }
 
-function initTimelineFilters(items) {
+function initTimelineFilters() {
   const buttons = Array.from(document.querySelectorAll('.timeline-filter'));
   if (buttons.length === 0) {
     return;
@@ -263,16 +253,160 @@ function initTimelineFilters(items) {
 
   buttons.forEach((button) => {
     button.addEventListener('click', () => {
-      const filter = button.dataset.filter ?? 'all';
+      currentFilter = button.dataset.filter ?? 'all';
       setActive(button);
-      applyTimelineFilter(items, filter);
+      applyTimelineFilter(currentTimelineItems, currentFilter);
     });
   });
 }
 
-function initCaseDetail() {
-  const { cases } = parseCaseData();
-  if (!Array.isArray(cases) || cases.length === 0) {
+function toLookupMap(list) {
+  return list.reduce((acc, entry) => {
+    acc[entry.id] = entry;
+    return acc;
+  }, {});
+}
+
+function deriveNextSteps(caseData, complianceItems) {
+  const nextSteps = [];
+  const pendingCompliance = complianceItems
+    .filter((item) => item.status !== 'erledigt')
+    .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+
+  pendingCompliance.slice(0, 3).forEach((item) => {
+    const due = formatDateTime(item.deadline);
+    nextSteps.push(`${item.title} – fällig bis ${due}`);
+  });
+
+  if (Array.isArray(caseData.deadlines)) {
+    caseData.deadlines.forEach((dl) => {
+      const due = formatDateTime(dl.date ?? dl.deadline);
+      nextSteps.push(`${dl.title} – fällig bis ${due}`);
+    });
+  }
+
+  return nextSteps.slice(0, 5);
+}
+
+function buildTimeline(caseData, lookups) {
+  const documents = (lookups.documentsByCase[caseData.id] ?? []).map((doc) => ({
+    id: doc.id,
+    type: 'document',
+    title: doc.title,
+    description: `${doc.type} – ${doc.status}`,
+    timestamp: doc.createdAt || doc.uploadedAt,
+    author: lookups.users[doc.createdBy]?.name,
+    attachment: doc.viewerUrl || doc.title,
+  }));
+
+  const complianceItems = (lookups.complianceItemsByCase[caseData.id] ?? []).map((item) => ({
+    id: item.id,
+    type: 'deadline',
+    title: item.title,
+    description: item.notes || 'Compliance-Aufgabe',
+    timestamp: item.deadline,
+    status: item.status,
+    risk: item.risk,
+    author: lookups.users[item.ownerId]?.name,
+  }));
+
+  const appointments = (lookups.appointmentsByCase[caseData.id] ?? []).map((appt) => ({
+    id: appt.id,
+    type: 'activity',
+    title: appt.title || appt.description,
+    description: appt.description,
+    timestamp: appt.dateTime,
+    author: (appt.participants || []).map((id) => lookups.users[id]?.name).filter(Boolean).join(', '),
+  }));
+
+  const timeEntries = (lookups.timeEntriesByCase[caseData.id] ?? []).map((entry) => ({
+    id: entry.id,
+    type: 'activity',
+    title: entry.activity,
+    description: entry.notes || 'Zeiterfassung',
+    timestamp: entry.startedAt,
+    duration: formatDuration(entry.durationMinutes),
+    author: lookups.users[entry.userId]?.name,
+  }));
+
+  const caseDeadlines = Array.isArray(caseData.deadlines)
+    ? caseData.deadlines.map((dl) => ({
+        id: dl.id ?? `deadline-${dl.title}`,
+        type: 'deadline',
+        title: dl.title,
+        description: 'Akte hinterlegte Frist',
+        timestamp: dl.date ?? dl.deadline,
+        status: dl.status ?? 'offen',
+        risk: dl.risk,
+      }))
+    : [];
+
+  return sortTimeline([...documents, ...complianceItems, ...appointments, ...timeEntries, ...caseDeadlines]);
+}
+
+function getActiveCase(cases) {
+  const params = new URLSearchParams(window.location.search);
+  const caseId = params.get('id');
+  const caseNumber = params.get('case');
+
+  if (caseId) {
+    const matchById = cases.find((entry) => entry.id === caseId);
+    if (matchById) return matchById;
+  }
+
+  if (caseNumber) {
+    const match = cases.find(
+      (entry) => entry.caseNumber?.toString().toLowerCase() === caseNumber.toString().toLowerCase()
+    );
+    if (match) {
+      return match;
+    }
+  }
+
+  return cases[0];
+}
+
+function buildLookups(store) {
+  const cases = store.getAll('Case');
+  const clients = store.getAll('Client');
+  const users = store.getAll('User');
+  const documents = store.getAll('Document');
+  const complianceItems = store.getAll('ComplianceItem');
+  const appointments = store.getAll('Appointment');
+  const timeEntries = store.getAll('TimeEntry');
+
+  const byCase = (list) =>
+    list.reduce((acc, item) => {
+      const key = item.caseId;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    }, {});
+
+  return {
+    cases,
+    clients: toLookupMap(clients),
+    users: toLookupMap(users),
+    documentsByCase: byCase(documents),
+    complianceItemsByCase: byCase(complianceItems),
+    appointmentsByCase: byCase(appointments),
+    timeEntriesByCase: byCase(timeEntries),
+  };
+}
+
+function renderCaseDetailFromStore() {
+  const store = window.verilexStore || verilexStore;
+  if (!store) {
+    overlayInstance?.show?.({
+      title: 'Keine Akteninformationen',
+      message: 'Der zentrale Store konnte nicht geladen werden.',
+    });
+    return;
+  }
+
+  const lookups = buildLookups(store);
+
+  if (!Array.isArray(lookups.cases) || lookups.cases.length === 0) {
     overlayInstance?.show?.({
       title: 'Keine Akteninformationen',
       message: 'Für die Detailansicht konnten keine Akten geladen werden.',
@@ -280,7 +414,7 @@ function initCaseDetail() {
     return;
   }
 
-  const currentCase = getCurrentCase(cases);
+  const currentCase = getActiveCase(lookups.cases);
   if (!currentCase) {
     overlayInstance?.show?.({
       title: 'Akte nicht gefunden',
@@ -289,9 +423,21 @@ function initCaseDetail() {
     return;
   }
 
-  renderSidebar(currentCase);
-  const timelineItems = renderTimeline(Array.isArray(currentCase.timeline) ? currentCase.timeline : []);
-  initTimelineFilters(timelineItems);
+  const timeline = buildTimeline(currentCase, lookups);
+  renderSidebar(currentCase, lookups, timeline);
+  currentTimelineItems = renderTimeline(timeline);
+  applyTimelineFilter(currentTimelineItems, currentFilter);
+}
+
+function initCaseDetail() {
+  initTimelineFilters();
+  renderCaseDetailFromStore();
+
+  verilexStore.on('storeReady', renderCaseDetailFromStore);
+  verilexStore.on('storeChanged', renderCaseDetailFromStore);
+  verilexStore.on('storeReset', renderCaseDetailFromStore);
 }
 
 initCaseDetail();
+
+export { initCaseDetail };
