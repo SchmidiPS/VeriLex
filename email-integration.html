@@ -15,13 +15,16 @@
         Demo einer kanzleitypischen E-Mail-Ansicht mit Nachrichtenliste, Detailbereich und Schnellaktionen.
       </p>
       <div class="welcome-actions">
-        <a class="btn btn-secondary" href="index.html">Zur Übersicht</a>
         <a class="btn btn-secondary" href="case-detail.html">Akten-Timeline</a>
         <a class="btn btn-secondary" href="document-management.html">Dokumentenverwaltung</a>
       </div>
     </header>
 
     <main class="app-main mail-main" aria-live="polite">
+      <nav class="back-navigation" aria-label="Navigation">
+        <a class="back-navigation__link" href="index.html"><span aria-hidden="true">&larr;</span> Zur Startseite</a>
+      </nav>
+
       <section
         class="mail-layout"
         aria-labelledby="mail-title"

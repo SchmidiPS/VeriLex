@@ -12,12 +12,13 @@
     <header class="app-header">
       <h1>Zeiterfassung</h1>
       <p class="app-subtitle">Erfassen Sie Arbeitszeiten und behalten Sie Leistungen im Blick.</p>
-      <div class="welcome-actions">
-        <a class="btn btn-secondary" href="index.html">Zur Übersicht</a>
-      </div>
     </header>
 
     <main class="app-main time-tracking-layout" aria-live="polite">
+      <nav class="back-navigation" aria-label="Navigation">
+        <a class="back-navigation__link" href="index.html"><span aria-hidden="true">&larr;</span> Zur Startseite</a>
+      </nav>
+
       <section
         class="app-card time-tracking-card"
         aria-labelledby="time-tracking-title"
