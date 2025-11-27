@@ -2381,11 +2381,13 @@ body {
   align-items: stretch;
 }
 
+.back-navigation,
 .case-breadcrumb {
   width: min(1100px, 100%);
   margin: 0 auto clamp(0.5rem, 2vw, 1rem);
 }
 
+.back-navigation__link,
 .case-breadcrumb__link {
   color: var(--color-accent-strong);
   font-weight: 600;
@@ -2395,6 +2397,8 @@ body {
   gap: 0.35rem;
 }
 
+.back-navigation__link:hover,
+.back-navigation__link:focus,
 .case-breadcrumb__link:hover,
 .case-breadcrumb__link:focus {
   text-decoration: underline;
