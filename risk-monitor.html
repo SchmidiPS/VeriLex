@@ -10,20 +10,19 @@
   </head>
   <body>
     <header class="app-header">
+      <div class="app-header__toolbar">
+        <a class="btn btn-secondary app-header__back" href="index.html">Zur Übersicht</a>
+        <div class="app-header__actions">
+          <a class="btn btn-secondary" href="dashboard.html">Zum Dashboard</a>
+        </div>
+      </div>
       <h1>Risikomonitor für Mandate</h1>
       <p class="app-subtitle">
         Behalten Sie kritische Verfahren im Blick, priorisieren Sie Gegenmaßnahmen und erkennen Sie Trends.
       </p>
-      <div class="welcome-actions">
-        <a class="btn btn-secondary" href="dashboard.html">Zum Dashboard</a>
-      </div>
     </header>
 
     <main class="app-main risk-monitor-main" aria-live="polite">
-      <nav class="back-navigation" aria-label="Navigation">
-        <a class="btn btn-secondary back-navigation__link" href="index.html">Zur Übersicht</a>
-      </nav>
-
       <section class="risk-overview" aria-labelledby="risk-overview-title" data-visible-for="partner,associate">
         <header class="risk-overview__header">
           <div>

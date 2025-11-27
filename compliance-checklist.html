@@ -10,21 +10,20 @@
   </head>
   <body>
     <header class="app-header">
+      <div class="app-header__toolbar">
+        <a class="btn btn-secondary app-header__back" href="index.html">Zur Übersicht</a>
+        <div class="app-header__actions">
+          <a class="btn btn-secondary" href="dashboard.html">Zum Dashboard</a>
+          <a class="btn btn-secondary" href="risk-monitor.html">Risikomonitor öffnen</a>
+        </div>
+      </div>
       <h1>Kanzlei-Compliance &amp; Qualitätscheck</h1>
       <p class="app-subtitle">
         Überwachen Sie Kanzleivorgaben, dokumentieren Sie Prüfungen und behalten Sie kritische Punkte im Blick.
       </p>
-      <div class="welcome-actions">
-        <a class="btn btn-secondary" href="dashboard.html">Zum Dashboard</a>
-        <a class="btn btn-secondary" href="risk-monitor.html">Risikomonitor öffnen</a>
-      </div>
     </header>
 
     <main class="app-main compliance-main" aria-live="polite">
-      <nav class="back-navigation" aria-label="Navigation">
-        <a class="btn btn-secondary back-navigation__link" href="index.html">Zur Übersicht</a>
-      </nav>
-
       <section class="compliance-module" aria-labelledby="compliance-module-title" data-visible-for="partner,associate,assistant">
         <header class="compliance-module__header">
           <div>

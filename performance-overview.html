@@ -10,20 +10,19 @@
   </head>
   <body>
     <header class="app-header">
+      <div class="app-header__toolbar">
+        <a class="btn btn-secondary app-header__back" href="index.html">Zur Übersicht</a>
+        <div class="app-header__actions">
+          <a class="btn btn-secondary" href="time-tracking.html">Zur Zeiterfassung</a>
+        </div>
+      </div>
       <h1>Leistungsübersicht</h1>
       <p class="app-subtitle">
         Analysieren Sie erfasste Tätigkeiten, filtern Sie nach Mandanten und behalten Sie Summen im Blick.
       </p>
-      <div class="welcome-actions">
-        <a class="btn btn-secondary" href="time-tracking.html">Zur Zeiterfassung</a>
-      </div>
     </header>
 
     <main class="app-main performance-overview-main" aria-live="polite">
-      <nav class="back-navigation" aria-label="Navigation">
-        <a class="btn btn-secondary back-navigation__link" href="index.html">Zur Übersicht</a>
-      </nav>
-
       <section
         class="performance-overview"
         aria-labelledby="performance-overview-title"
