@@ -15,13 +15,16 @@
         Behalten Sie unbezahlte Rechnungen, offene Beträge und bereits beglichene Vorgänge transparent im Blick.
       </p>
       <div class="welcome-actions">
-        <a class="btn btn-secondary" href="index.html">Zur Übersicht</a>
         <a class="btn btn-secondary" href="performance-overview.html">Leistungsübersicht</a>
         <a class="btn btn-secondary" href="invoice-wizard.html">Rechnungs-Wizard</a>
       </div>
     </header>
 
     <main class="app-main receivables-main" aria-live="polite">
+      <nav class="back-navigation" aria-label="Navigation">
+        <a class="btn btn-secondary back-navigation__link" href="index.html">Zur Übersicht</a>
+      </nav>
+
       <section
         class="receivables-board"
         aria-labelledby="receivables-title"
